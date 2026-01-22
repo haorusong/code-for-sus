@@ -1,0 +1,41 @@
+Multivariate Tests (SPSS-style; Pillai, Wilks, Hotelling–Lawley, Roy)
+Dependent Variables: Lab_Rating, Premium_Rating, Basic_Rating
+Design (IVs): Cluster + Price Level + Nutrition Level + Sustainability Level + Taste Level
+
+Intercept
+  Pillai’s Trace: Value = 0.635, F(3, 261) = 151.632, p < .001
+  Wilks’ Lambda: Value = 0.365, F(3, 261) = 151.632, p < .001; η² ≈ 0.635
+  Hotelling–Lawley Trace: Value = 1.743, F(3, 261) = 151.632, p < .001
+  Roy’s Largest Root: Value = 1.743, F(3, 261) = 151.632, p < .001
+
+Cluster
+  Pillai’s Trace: Value = 0.212, F(6, 524) = 10.366, p < .001
+  Wilks’ Lambda: Value = 0.788, F(6, 522) = 10.993, p < .001; η² ≈ 0.212
+  Hotelling–Lawley Trace: Value = 0.268, F(6, 346) = 11.642, p < .001
+  Roy’s Largest Root: Value = 0.266, F(3, 262) = 23.240, p < .001
+
+Price Level
+  Pillai’s Trace: Value = 0.051, F(3, 261) = 4.651, p = .003
+  Wilks’ Lambda: Value = 0.949, F(3, 261) = 4.651, p = .003; η² ≈ 0.051
+  Hotelling–Lawley Trace: Value = 0.053, F(3, 261) = 4.651, p = .003
+  Roy’s Largest Root: Value = 0.053, F(3, 261) = 4.651, p = .003
+
+Nutrition Level
+  Pillai’s Trace: Value = 0.010, F(3, 261) = 0.896, p = .443
+  Wilks’ Lambda: Value = 0.990, F(3, 261) = 0.896, p = .443; η² ≈ 0.010
+  Hotelling–Lawley Trace: Value = 0.010, F(3, 261) = 0.896, p = .443
+  Roy’s Largest Root: Value = 0.010, F(3, 261) = 0.896, p = .443
+
+Sustainability Level
+  (excluded: insufficient coverage or iterative reduction due to singularity)
+
+Taste Level
+  Pillai’s Trace: Value = 0.070, F(6, 524) = 3.145, p = .005
+  Wilks’ Lambda: Value = 0.931, F(6, 522) = 3.160, p = .005; η² ≈ 0.069
+  Hotelling–Lawley Trace: Value = 0.073, F(6, 346) = 3.182, p = .005
+  Roy’s Largest Root: Value = 0.062, F(3, 262) = 5.446, p = .001
+
+a. Exact statistic
+b. Computed using alpha = .05
+c. The statistic is an upper bound on F that yields a lower bound on the significance level.
+d. Design: Lab_Rating, Premium_Rating, Basic_Rating ~ C(Category) + C(NutriLvl) + C(PriceLvl) + C(TasteLvl)
