@@ -1,0 +1,2 @@
+Rows_Used,Scenario_Factors,Demographics_Used,Demographics_Dropped
+270,"PriceLvl_Lab, NutriLvl_Lab, TasteLvl_Lab","Age, Gender, Education, Marital, HouseholdSize, Income, Employment, Urban_Rural",0
