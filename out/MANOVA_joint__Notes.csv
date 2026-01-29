@@ -1,0 +1,2 @@
+error,formula
+Covariance of x singular!,Lab_Rating + Premium_Rating + Basic_Rating ~ C(Category) + C(PriceLvl) + C(NutriLvl) + C(TasteLvl)

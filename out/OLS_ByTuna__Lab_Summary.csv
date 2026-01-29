@@ -1,0 +1,10 @@
+Metric,Value
+N,268
+R2,0.35285548886079654
+Adj_R2,0.23882121377018795
+F,74.58334439764612
+F_p,5.565333244758213e-110
+AIC,1116.941000738986
+BIC,1264.1714669399312
+Cov_Type,HC3
+Formula_Used,Lab_Rating ~ C(Category) + C(PriceLvl) + C(NutriLvl) + C(TasteLvl) + C(Age) + C(Gender) + C(Education) + C(Marital) + C(HouseholdSize) + C(Income) + C(Employment) + C(Urban_Rural)
