@@ -210,7 +210,7 @@ def plot_mean_ratings_by_cluster(df: pd.DataFrame, cluster_col: str, outpath: st
     mdf = mdf.rename(columns=rename_map)
 
     fig, ax = plt.subplots(figsize=(11, 6.5))
-    ax.set_title("Mean Ratings by Cluster", pad=14)
+    ax.set_title("Willingness to Purchases by Cluster", pad=14)
 
     x = np.arange(len(mdf.index))
     width = 0.22 if mdf.shape[1] >= 3 else 0.35
@@ -230,7 +230,7 @@ def plot_mean_ratings_by_cluster(df: pd.DataFrame, cluster_col: str, outpath: st
 
     ax.set_xticks(x)
     ax.set_xticklabels(mdf.index.astype(str), rotation=20, ha="right")
-    ax.set_ylabel("Mean Rating (1–7)")
+    ax.set_ylabel("Willingness to Purchase (1-7)")
     ax.set_ylim(1, 7)
     ax.legend(frameon=False, loc="upper left")
     fig.tight_layout()
@@ -288,7 +288,7 @@ def plot_factor_marginal_effect_lines(
     ax.set_xticks(xpos)
     ax.set_xticklabels(xticklabels)
     ax.set_xlabel(xlab)
-    ax.set_ylabel("Mean Rating (1–7)")
+    ax.set_ylabel("Willingness to Purchase (1-7)")
     ax.set_ylim(1, 7)
     ax.legend(frameon=False, loc="upper right")
     fig.tight_layout()
@@ -304,7 +304,7 @@ def plot_cluster_profile_across_tunas(df: pd.DataFrame, cluster_col: str, outpat
 
     cols = []
     labels = []
-    for c, lbl in [(COL_RATE_LAB, "Lab"), (COL_RATE_PREM, "Premium"), (COL_RATE_BASIC, "Basic")]:
+    for c, lbl in [(COL_RATE_BASIC, "Basic"), (COL_RATE_PREM, "Premium"), (COL_RATE_LAB, "Lab")]:
         if c in df.columns:
             cols.append(c)
             labels.append(lbl)
@@ -332,7 +332,7 @@ def plot_cluster_profile_across_tunas(df: pd.DataFrame, cluster_col: str, outpat
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.set_xlabel("Tuna Type")
-    ax.set_ylabel("Mean Rating (1–7)")
+    ax.set_ylabel("Willingness to Purchase (1-7)")
     ax.set_ylim(1, 7)
     ax.legend(frameon=False, title="Cluster", loc="best")
     fig.tight_layout()
@@ -394,7 +394,7 @@ def plot_price_nutrition_interaction_heatmaps(df: pd.DataFrame, outdir: str) -> 
             data,
             xlabels=[str(x) for x in price_levels],
             ylabels=[str(y) for y in nutr_levels],
-            title=f"Price × Nutrition (Mean Rating): {tuna_name}",
+            title=f"Price × Nutrition (Willingness to Purchase): {tuna_name}",
         )
         ax.set_xlabel("Price Level")
         ax.set_ylabel("Nutrition Level")
@@ -411,7 +411,7 @@ def plot_price_nutrition_interaction_heatmaps(df: pd.DataFrame, outdir: str) -> 
                 ax.text(j, i, txt, ha="center", va="center", fontsize=10)
 
         cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-        cbar.set_label("Mean Rating")
+        cbar.set_label("Willingness to Purchase")
 
         fig.tight_layout()
         fig.savefig(os.path.join(outdir, f"heatmap_price_nutrition_{tuna_name.lower()}.png"), dpi=300)
@@ -445,6 +445,92 @@ def plot_factor_level_counts(df: pd.DataFrame, outdir: str) -> None:
         fig.tight_layout()
         fig.savefig(os.path.join(outdir, f"counts_{col}.png"), dpi=300)
         plt.close(fig)
+
+
+def plot_age_distribution(df: pd.DataFrame, outpath: str, age_col: str = "Age") -> None:
+    """Create age distribution bar chart used by ACM manuscript (fig_age_distribution.png)."""
+    apply_plot_style()
+    if age_col not in df.columns:
+        return
+
+    ser = df[age_col].dropna().astype(str).str.strip()
+    if ser.empty:
+        return
+
+    preferred_order = ["18-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75 or older"]
+
+    def _norm_age(x: str) -> str:
+        y = x.replace("–", "-").replace("—", "-").replace(" to ", "-").strip()
+
+        # Numeric-coded bins from survey/codebook
+        num_map = {
+            "1": "18-24",
+            "2": "25-34",
+            "3": "35-44",
+            "4": "45-54",
+            "5": "55-64",
+            "6": "65-74",
+            "7": "75 or older",
+        }
+        y_num = y
+        # handle values like 1.0 / 2.0 from CSV/excel coercion
+        try:
+            yf = float(y)
+            if yf.is_integer():
+                y_num = str(int(yf))
+        except Exception:
+            pass
+        if y_num in num_map:
+            return num_map[y_num]
+
+        # Text normalization
+        yn = y.replace(" ", "").lower()
+        yn = yn.replace("18-24years", "18-24").replace("25-34years", "25-34")
+        yn = yn.replace("35-44years", "35-44").replace("45-54years", "45-54")
+        yn = yn.replace("55-64years", "55-64").replace("65-74years", "65-74")
+        yn = yn.replace("75+years", "75orolder")
+
+        text_map = {
+            "18-24": "18-24",
+            "25-34": "25-34",
+            "35-44": "35-44",
+            "45-54": "45-54",
+            "55-64": "55-64",
+            "65-74": "65-74",
+            "75orolder": "75 or older",
+            "75+": "75 or older",
+        }
+        return text_map.get(yn, y)
+
+    ser = ser.map(_norm_age)
+    counts = ser.value_counts()
+    order = [x for x in preferred_order if x in counts.index] + [x for x in counts.index if x not in preferred_order]
+    counts = counts.reindex(order)
+
+    fig, ax = plt.subplots(figsize=(8.8, 5.4))
+    ax.set_title("Participant Age Distribution", pad=14)
+    bars = ax.bar(counts.index.astype(str), counts.values)
+    ax.set_xlabel("Age group")
+    ax.set_ylabel("Participants")
+    ax.tick_params(axis="x", rotation=25)
+
+    total = float(counts.sum()) if len(counts.values) else 0.0
+    dy = max(counts.values) * 0.02 if len(counts.values) else 0.8
+    for b in bars:
+        h = float(b.get_height())
+        pct = (h / total * 100.0) if total > 0 else 0.0
+        ax.text(
+            b.get_x() + b.get_width() / 2,
+            h + dy,
+            f"{int(h)} ({pct:.1f}%)",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
+
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=300)
+    plt.close(fig)
 
 
 # ---------------------------------------------------------------------
@@ -632,5 +718,8 @@ def plot_everything(
     plot_combined_level_counts(df, fp)
     out["counts_combined"] = fp
 
+    fp = os.path.join(out_dir, "fig_age_distribution.png")
+    plot_age_distribution(df, fp, age_col="Age")
+    out["fig_age_distribution"] = fp
 
     return out

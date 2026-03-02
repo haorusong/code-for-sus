@@ -1,0 +1,25 @@
+Respondents used: 270
+Segment sizes:
+segment
+Mixed               109
+Premium-first        90
+Basic-first          50
+Low-interest all     21
+
+Global utility model coefficients:
+const              3.8429
+price_level       -0.3074
+taste_level        0.2083
+nutrition_level    0.0215
+sustain_level      0.5531
+alt_Lab           -1.8967
+alt_Premium        0.5037
+
+Global model R2: 0.1778
+
+Segment utility coefficients:
+         segment  n_profiles  coef_price  coef_taste  coef_nutrition  coef_sustain  coef_alt_premium  coef_alt_Basic     r2
+           Mixed         327      0.0092      0.1138          0.4931        0.9520            0.5258             NaN 0.3441
+   Premium-first         270      0.0263     -0.1829          0.0760        0.0882            1.9453             NaN 0.7778
+     Basic-first         150     -0.3039      0.3519         -0.4966       -0.2435           -1.8114             NaN 0.6266
+Low-interest all          63     -0.1587      0.7598          0.2605       -0.0422           -0.6267             NaN 0.1089

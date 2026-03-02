@@ -1,0 +1,6 @@
+Respondents total in extracted module: 273\nComplete rows used for clustering: 269\nSilhouette scores by k (2..6):\n  k=2: 0.2331\n  k=3: 0.1775\n  k=4: 0.1785\n  k=5: 0.1809\n  k=6: 0.1943\nBest k by silhouette: 2\n\nCluster means (best-k):\n               lab_like  premium_like  basic_like  human_imp  animal_imp  energy_imp
+cluster_kbest                                                                       
+0                  1.91          4.57        4.01       2.67        2.95        2.37
+1                  3.85          5.67        4.42       4.10        4.31        4.09\n\nCluster sizes (best-k):\ncluster_kbest
+0     81
+1    188

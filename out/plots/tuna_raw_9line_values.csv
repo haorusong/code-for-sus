@@ -1,0 +1,40 @@
+sustain_group,alt,price_usd,mean_wtp
+Supportive & Active,Lab,4.5,4.25
+Supportive & Active,Lab,6.0,4.578947368421052
+Supportive & Active,Lab,6.5,3.693877551020408
+Supportive & Active,Lab,7.5,3.4482758620689653
+Supportive & Active,Premium,5.0,5.909090909090909
+Supportive & Active,Premium,5.5,5.45
+Supportive & Active,Premium,6.5,5.754385964912281
+Supportive & Active,Premium,7.0,5.473684210526316
+Supportive & Active,Basic,4.0,4.172413793103448
+Supportive & Active,Basic,4.2,3.6842105263157894
+Supportive & Active,Basic,4.5,4.142857142857143
+Supportive & Active,Basic,5.0,3.727272727272727
+Supportive & Active,Basic,5.5,4.35
+Supportive but Inactive,Lab,4.5,4.684210526315789
+Supportive but Inactive,Lab,6.0,3.111111111111111
+Supportive but Inactive,Lab,6.5,3.68
+Supportive but Inactive,Lab,7.5,2.5
+Supportive but Inactive,Premium,5.0,6.0
+Supportive but Inactive,Premium,5.5,5.157894736842105
+Supportive but Inactive,Premium,6.5,5.416666666666667
+Supportive but Inactive,Premium,7.0,5.333333333333333
+Supportive but Inactive,Basic,4.0,5.0
+Supportive but Inactive,Basic,4.2,4.444444444444445
+Supportive but Inactive,Basic,4.5,4.714285714285714
+Supportive but Inactive,Basic,5.0,3.8181818181818183
+Supportive but Inactive,Basic,5.5,4.2105263157894735
+Unsupportive,Lab,4.5,2.2777777777777777
+Unsupportive,Lab,6.0,2.5789473684210527
+Unsupportive,Lab,6.5,2.225806451612903
+Unsupportive,Lab,7.5,1.826086956521739
+Unsupportive,Premium,5.0,6.076923076923077
+Unsupportive,Premium,5.5,4.722222222222222
+Unsupportive,Premium,6.5,4.7317073170731705
+Unsupportive,Premium,7.0,4.368421052631579
+Unsupportive,Basic,4.0,4.608695652173913
+Unsupportive,Basic,4.2,5.315789473684211
+Unsupportive,Basic,4.5,4.631578947368421
+Unsupportive,Basic,5.0,4.384615384615385
+Unsupportive,Basic,5.5,3.7777777777777777

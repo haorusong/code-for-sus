@@ -1,0 +1,10 @@
+Respondents extracted: 273\nComplete rows used: 270\nSilhouette scores by k (2..6):\n  k=2: 0.2830\n  k=3: 0.3173\n  k=4: 0.3351\n  k=5: 0.3346\n  k=6: 0.3194\nBest k: 4\n\nCluster means (lab/premium/basic):\n                     lab_like  premium_like  basic_like
+cluster_kbest_noQ72                                    
+0                        1.56          6.47        4.52
+1                        5.34          5.83        3.74
+2                        2.00          1.95        1.71
+3                        2.40          3.66        6.20\n\nCluster sizes:\ncluster_kbest_noQ72
+0     90
+1    109
+2     21
+3     50

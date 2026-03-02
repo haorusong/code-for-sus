@@ -148,7 +148,10 @@ def merge_scenario_book(df, scenario_book_path=SCENARIO_BOOK):
 
 
 def infer_levels(df):
-    """Normalize scenario levels and create both per-tuna and single proxy columns (including Taste)."""
+    """Normalize scenario levels and create both per-tuna and single proxy columns (including Taste).
+
+    Also preserves pre-normalized scenario-book values (e.g., dollar prices) in `*_raw` columns.
+    """
     ordered = pd.CategoricalDtype(categories=["Low","Mid","High"], ordered=True)
 
     def _normalize_one(x):
@@ -176,6 +179,14 @@ def infer_levels(df):
         vals = series if isinstance(series, pd.Series) else pd.Series(series, index=df.index)
         out = vals.map(_normalize_one)
         return out.astype("category").cat.set_categories(ordered.categories, ordered=True)
+
+    # Preserve raw scenario-book values before normalization (useful for dollar-price analyses)
+    for c in [COL_PRICE_LAB, COL_PRICE_PREM, COL_PRICE_BASIC,
+              COL_NUTR_LAB,  COL_NUTR_PREM,  COL_NUTR_BASIC,
+              COL_SUST_LAB,  COL_SUST_PREM,  COL_SUST_BASIC,
+              COL_TASTE_LAB, COL_TASTE_PREM, COL_TASTE_BASIC]:
+        if c in df.columns and f"{c}_raw" not in df.columns:
+            df[f"{c}_raw"] = df[c]
 
     # Normalize any per-tuna columns coming from the scenario book if present
     for c in [COL_PRICE_LAB, COL_PRICE_PREM, COL_PRICE_BASIC,

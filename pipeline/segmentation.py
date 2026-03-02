@@ -12,11 +12,11 @@ def _label_centroid(row):
     b = row.get(f"{COL_BEH}_z", 0.0)
     e = row.get(f"{COL_ECON}_z", 0.0) if INCLUDE_ECON else 0.0
     if a > 0.4 and b > 0.4 and (e > 0.0 or not INCLUDE_ECON):
-        return "Truly Green"
+        return "Supportive and Active"
     if a > 0.2 and b < -0.2:
-        return "Supportive but Inactive"
+        return "Supportive and Inactive"
     if a < -0.3 and b < -0.3 and (e < -0.2 or not INCLUDE_ECON):
-        return "Don’t Care Much"
+        return "Unsupportive and Inactive"
     return "Supportive but Inactive"
 
 

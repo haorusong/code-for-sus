@@ -66,7 +66,7 @@ def _plot_effect_lines(df, level_col, title, xlab, outname):
         plt.figure(figsize=(11,7))
         plt.title(title, fontsize=22, pad=12)
         plt.xlabel(xlab, fontsize=16)
-        plt.ylabel("Mean Rating", fontsize=16)
+        plt.ylabel("Willingness to Purchase", fontsize=16)
         plt.xticks(ticks=range(3), labels=[f"{lv}\n(n=0)" for lv in order])
         plt.text(0.5, 0.5, "No data after filtering", ha="center", va="center", fontsize=14)
         ax.set_ylim(0, 7)
@@ -103,7 +103,7 @@ def _plot_effect_lines(df, level_col, title, xlab, outname):
         annotate_points(ax, x, y)
 
     ax.set_xlabel(xlab, fontsize=16)
-    ax.set_ylabel('Mean Rating', fontsize=16)
+    ax.set_ylabel('Willingness to Purchase', fontsize=16)
     ax.set_xticks(x)
     ax.set_xticklabels([f"{lv}\\n(n={int(n_per.get(lv,0))})" for lv in order2])
     ax.set_ylim(0, 7)
@@ -149,7 +149,7 @@ def plot_everything(df, Xz=None, labels=None):
             plt.savefig("out/plots/attitude_behavior_scatter.png", dpi=300)
             plt.close(fig)
 
-    # 3) Mean ratings by cluster
+    # 3) Willingness to Purchases by cluster
     rating_cols = [(COL_RATE_LAB, "Lab Grown"), (COL_RATE_PREM, "Premium"), (COL_RATE_BASIC, "Basic")]
     if "Category" in df.columns:
         means = []
@@ -162,7 +162,7 @@ def plot_everything(df, Xz=None, labels=None):
         if means:
             mdf = pd.concat(means, axis=1)
             fig, ax = plt.subplots(figsize=(10,6))
-            ax.set_title("Mean Ratings by Cluster", pad=12)
+            ax.set_title("Willingness to Purchase by Cluster", pad=12)
             x = np.arange(len(mdf.index))
             width = 0.25 if mdf.shape[1] >= 3 else 0.35
             for i, col in enumerate(mdf.columns):
@@ -174,7 +174,7 @@ def plot_everything(df, Xz=None, labels=None):
                             ha="center", va="bottom", fontsize=10)
             ax.set_xticks(x)
             ax.set_xticklabels(mdf.index.astype(str), rotation=20, ha="right")
-            ax.set_ylabel("Mean Rating")
+            ax.set_ylabel("Willingness to Purchase")
             ax.set_ylim(0,7)
             ax.legend(frameon=False)
             fig.tight_layout()

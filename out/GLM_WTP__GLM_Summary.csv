@@ -1,0 +1,10 @@
+Metric,Value
+N,804
+R2,0.24026609408230126
+Adj_R2,0.1951631577151557
+F,116.08663037443945
+F_p,0.0
+AIC,3312.118145819144
+BIC,3527.8397122013766
+Cov_Type,HC3
+Formula,WTP ~ C(Product) + PriceUSD + C(PriceLvl) + C(NutriLvl) + C(TasteLvl) + C(Category) + C(Product):PriceUSD + C(Product):C(PriceLvl) + C(Age) + C(Gender) + C(Education) + C(Marital) + C(HouseholdSize) + C(Income) + C(Employment) + C(Urban_Rural)
