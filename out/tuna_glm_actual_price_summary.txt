@@ -1,0 +1,23 @@
+GLM method summary (actual USD price)
+=====================================
+N rows: 816
+Formula:
+rating ~ C(alt, Treatment(reference="Lab")) * C(sustain_group, Treatment(reference="Supportive & Active")) + price_usd
+
+
+Product-wise OLS price slopes (rating per +$1):
+  Basic: -0.3149
+  Premium: -0.2924
+  Lab: -0.3477
+
+                                                                                                                                 term    beta  se_robust  z_or_t  p_value  ci_low_95  ci_high_95
+                                                                                                                            Intercept  5.9124     0.5354 11.0438   0.0000     4.8631      6.9616
+                                                                                        C(alt, Treatment(reference="Lab"))[T.Premium]  1.7522     0.2346  7.4699   0.0000     1.2925      2.2120
+                                                                                          C(alt, Treatment(reference="Lab"))[T.Basic] -0.3971     0.2776 -1.4305   0.1526    -0.9412      0.1470
+                                              C(sustain_group, Treatment(reference="Supportive & Active"))[T.Supportive but Inactive] -0.2674     0.3186 -0.8395   0.4012    -0.8918      0.3569
+                                                         C(sustain_group, Treatment(reference="Supportive & Active"))[T.Unsupportive] -1.6862     0.2498 -6.7517   0.0000    -2.1758     -1.1967
+C(alt, Treatment(reference="Lab"))[T.Premium]:C(sustain_group, Treatment(reference="Supportive & Active"))[T.Supportive but Inactive] -0.0303     0.4053 -0.0747   0.9405    -0.8246      0.7640
+  C(alt, Treatment(reference="Lab"))[T.Basic]:C(sustain_group, Treatment(reference="Supportive & Active"))[T.Supportive but Inactive]  0.7027     0.4268  1.6467   0.0996    -0.1337      1.5392
+           C(alt, Treatment(reference="Lab"))[T.Premium]:C(sustain_group, Treatment(reference="Supportive & Active"))[T.Unsupportive]  0.8656     0.3432  2.5223   0.0117     0.1930      1.5383
+             C(alt, Treatment(reference="Lab"))[T.Basic]:C(sustain_group, Treatment(reference="Supportive & Active"))[T.Unsupportive]  2.2136     0.3554  6.2292   0.0000     1.5171      2.9101
+                                                                                                                            price_usd -0.3226     0.0798 -4.0435   0.0001    -0.4790     -0.1662

@@ -1,0 +1,22 @@
+N respondents: 270\nN profiles (long rows): 810\n\nPrice-only model: rating ~ price_level + alt FE\nconst          4.8517
+price_level   -0.3052
+alt_Lab       -0.7795
+alt_Premium    1.2849\nR2: 0.1755\n\nMean rating by alternative and price level:\n    alt  price_level     mean  count
+  Basic            1 4.477064    109
+  Basic            2 4.211538    104
+  Basic            3 4.122807     57
+    Lab            2 3.644231    104
+    Lab            3 3.042169    166
+Premium            2 5.518868    106
+Premium            3 5.225610    164\n\nSegment-level price coefficient (negative = dislikes higher price):\n         segment   n  price_coef     r2
+           Mixed 327      0.0112 0.3345
+   Premium-first 270      0.0158 0.7764
+     Basic-first 150     -0.3239 0.6166
+Low-interest all  63     -0.1456 0.0154\n\nHigh-price minus low-price rating spread (overall):\ncount    270.0000
+mean      -0.7444
+std        3.2305
+min       -6.0000
+25%       -3.0000
+50%       -1.0000
+75%        1.0000
+max        6.0000

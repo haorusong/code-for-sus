@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
 from statsmodels.stats.anova import anova_lm
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from statsmodels.multivariate.manova import MANOVA
@@ -1318,4 +1319,175 @@ def ols_by_tuna_tables(df):
 
     if not tables:
         tables["Notes"]=pd.DataFrame({"note":["No analyzable data for OLS models."]})
+    return tables
+
+
+# =========================
+# Meeting-note extensions
+# =========================
+
+def treatment_condition_table(df):
+    """Construct methods-ready treatment condition table with level and raw values (if available)."""
+    cols = [c for c in [COL_SCENARIO,
+                        COL_PRICE_LAB, COL_PRICE_PREM, COL_PRICE_BASIC,
+                        COL_NUTR_LAB, COL_NUTR_PREM, COL_NUTR_BASIC,
+                        COL_TASTE_LAB, COL_TASTE_PREM, COL_TASTE_BASIC,
+                        f"{COL_PRICE_LAB}_raw", f"{COL_PRICE_PREM}_raw", f"{COL_PRICE_BASIC}_raw"] if c in df.columns]
+    if not cols:
+        return {"Notes": pd.DataFrame({"note": ["No scenario columns found for treatment table."]})}
+
+    t = df[cols].drop_duplicates().copy()
+    if COL_SCENARIO in t.columns:
+        t = t.sort_values(COL_SCENARIO)
+
+    # Add star-equivalent mapping for readability
+    star_map = {"Low": "★☆☆", "Mid": "★★☆", "High": "★★★", 1: "★☆☆", 2: "★★☆", 3: "★★★"}
+    for c in [COL_PRICE_LAB, COL_PRICE_PREM, COL_PRICE_BASIC,
+              COL_NUTR_LAB, COL_NUTR_PREM, COL_NUTR_BASIC,
+              COL_TASTE_LAB, COL_TASTE_PREM, COL_TASTE_BASIC]:
+        if c in t.columns:
+            t[f"{c}_Stars"] = t[c].map(star_map)
+
+    meta = pd.DataFrame({
+        "Field": ["Rows", "Unique scenarios"],
+        "Value": [len(t), int(t[COL_SCENARIO].nunique()) if COL_SCENARIO in t.columns else np.nan]
+    })
+    return {"ConditionTable": t.reset_index(drop=True), "ConditionMeta": meta}
+
+
+def _build_long_wtp(df):
+    """Stack Lab/Premium/Basic ratings into long format for GLM + price analyses."""
+    specs = [
+        ("Lab", COL_RATE_LAB, COL_PRICE_LAB, COL_NUTR_LAB, COL_TASTE_LAB),
+        ("Premium", COL_RATE_PREM, COL_PRICE_PREM, COL_NUTR_PREM, COL_TASTE_PREM),
+        ("Basic", COL_RATE_BASIC, COL_PRICE_BASIC, COL_NUTR_BASIC, COL_TASTE_BASIC),
+    ]
+    parts = []
+    for prod, dv, pcol, ncol, tcol in specs:
+        if dv not in df.columns:
+            continue
+        use = [c for c in [COL_PID, "Category", dv, pcol, ncol, tcol, f"{pcol}_raw"] + [d for d in DEMOG_COLS if d in df.columns] if c in df.columns]
+        sub = df[use].copy()
+        sub = sub.rename(columns={dv: "WTP", pcol: "PriceLvl", ncol: "NutriLvl", tcol: "TasteLvl", f"{pcol}_raw": "PriceRaw"})
+        sub["Product"] = prod
+        parts.append(sub)
+
+    if not parts:
+        return pd.DataFrame()
+    long = pd.concat(parts, ignore_index=True)
+    long["WTP"] = pd.to_numeric(long["WTP"], errors="coerce")
+
+    if "PriceRaw" in long.columns:
+        p = long["PriceRaw"].astype(str).str.replace(r"[^0-9\\.-]", "", regex=True)
+        long["PriceUSD"] = pd.to_numeric(p, errors="coerce")
+    else:
+        long["PriceUSD"] = np.nan
+
+    # Fallback numeric price if raw dollar not available
+    if long["PriceUSD"].notna().sum() == 0 and "PriceLvl" in long.columns:
+        long["PriceUSD"] = long["PriceLvl"].astype(str).map({"Low": 1, "Mid": 2, "High": 3})
+
+    return long.dropna(subset=["WTP"]).copy()
+
+
+def glm_wtp_models(df):
+    """Meeting-aligned GLM (regression-first) with interactions and controls."""
+    long = _build_long_wtp(df)
+    if long.empty:
+        return {"Notes": pd.DataFrame({"note": ["No analyzable long-format WTP data."]})}
+
+    # Keep rows with core factors
+    need = [c for c in ["Product", "PriceLvl", "NutriLvl", "TasteLvl", "Category"] if c in long.columns]
+    sub = long.dropna(subset=need).copy()
+    if sub.empty:
+        return {"Notes": pd.DataFrame({"note": ["No rows with complete Product/Price/Nutrition/Taste/Category."]})}
+
+    rhs = ["C(Product)", "PriceUSD", "C(PriceLvl)", "C(NutriLvl)", "C(TasteLvl)", "C(Category)"]
+    rhs += ["C(Product):PriceUSD", "C(Product):C(PriceLvl)"]
+
+    for d in DEMOG_COLS:
+        if d in sub.columns and sub[d].dropna().astype(str).nunique() >= 2:
+            rhs.append(f"C({d})")
+
+    formula = "WTP ~ " + " + ".join(rhs)
+    out = {}
+    try:
+        mdl = smf.ols(formula, data=sub).fit(cov_type="HC3")
+        coef = pd.DataFrame({
+            "term": mdl.params.index,
+            "coef": mdl.params.values,
+            "std_err": mdl.bse.values,
+            "t": mdl.tvalues.values,
+            "p": mdl.pvalues.values,
+        })
+        ci = mdl.conf_int()
+        ci.columns = ["ci_low", "ci_high"]
+        out["GLM_Coefs"] = coef.join(ci, how="left")
+        out["GLM_Summary"] = pd.DataFrame({
+            "Metric": ["N", "R2", "Adj_R2", "F", "F_p", "AIC", "BIC", "Cov_Type", "Formula"],
+            "Value": [int(mdl.nobs), mdl.rsquared, mdl.rsquared_adj, getattr(mdl, "fvalue", np.nan),
+                      getattr(mdl, "f_pvalue", np.nan), mdl.aic, mdl.bic, mdl.cov_type, formula],
+        })
+    except Exception as e:
+        out["GLM_Error"] = pd.DataFrame({"error": [str(e)], "formula": [formula]})
+
+    # Predicted willingness by product × price
+    if "PriceUSD" in sub.columns and sub["PriceUSD"].notna().sum() > 0:
+        pred = sub.groupby(["Product", "PriceUSD"], as_index=False)["WTP"].mean().rename(columns={"WTP": "ObservedMeanWTP"})
+        out["Price_WTP_Table"] = pred.sort_values(["Product", "PriceUSD"]).reset_index(drop=True)
+
+    out["LongData_Head"] = sub.head(300).reset_index(drop=True)
+    return out
+
+
+def cross_price_analysis(df, out_plot_path="out/plots/price_vs_wtp_by_product.png"):
+    """Cross-price substitution summary + price-vs-WTP plot."""
+    long = _build_long_wtp(df)
+    if long.empty or "PriceUSD" not in long.columns:
+        return {"Notes": pd.DataFrame({"note": ["Cross-price analysis skipped: missing long data or PriceUSD."]})}
+
+    tables = {}
+    sub = long.dropna(subset=["PriceUSD", "WTP", "Product"]).copy()
+    if sub.empty:
+        return {"Notes": pd.DataFrame({"note": ["Cross-price analysis skipped: no complete rows."]})}
+
+    agg = sub.groupby(["Product", "PriceUSD"], as_index=False).agg(
+        MeanWTP=("WTP", "mean"),
+        N=("WTP", "size")
+    )
+    tables["CrossPrice_MeanWTP"] = agg.sort_values(["Product", "PriceUSD"]).reset_index(drop=True)
+
+    # Switching indicators from wide ratings
+    if all(c in df.columns for c in [COL_RATE_LAB, COL_RATE_PREM, COL_RATE_BASIC, f"{COL_PRICE_LAB}_raw"]):
+        w = df[[COL_RATE_LAB, COL_RATE_PREM, COL_RATE_BASIC, f"{COL_PRICE_LAB}_raw"]].copy()
+        w["LabPriceRaw"] = pd.to_numeric(w[f"{COL_PRICE_LAB}_raw"].astype(str).str.replace(r"[^0-9\\.-]", "", regex=True), errors="coerce")
+        for c in [COL_RATE_LAB, COL_RATE_PREM, COL_RATE_BASIC]:
+            w[c] = pd.to_numeric(w[c], errors="coerce")
+        w = w.dropna()
+        if not w.empty:
+            w["SwitchFromBasicToLab"] = (w[COL_RATE_LAB] > w[COL_RATE_BASIC]).astype(int)
+            w["SwitchFromPremiumToLab"] = (w[COL_RATE_LAB] > w[COL_RATE_PREM]).astype(int)
+            w["LabTopChoice"] = ((w[COL_RATE_LAB] >= w[COL_RATE_BASIC]) & (w[COL_RATE_LAB] >= w[COL_RATE_PREM])).astype(int)
+            sw = w.groupby("LabPriceRaw", as_index=False)[["SwitchFromBasicToLab", "SwitchFromPremiumToLab", "LabTopChoice"]].mean()
+            tables["CrossPrice_Switching"] = sw.sort_values("LabPriceRaw").reset_index(drop=True)
+
+    # Plot
+    try:
+        os.makedirs(os.path.dirname(out_plot_path), exist_ok=True)
+        fig, ax = plt.subplots(figsize=(9, 6))
+        for prod, g in agg.groupby("Product"):
+            g = g.sort_values("PriceUSD")
+            ax.plot(g["PriceUSD"], g["MeanWTP"], marker="o", label=str(prod))
+        ax.set_xlabel("Price (USD)")
+        ax.set_ylabel("Mean willingness to purchase")
+        ax.set_title("Price vs Willingness to Purchase by Product")
+        ax.grid(True, alpha=0.3)
+        ax.legend(frameon=False)
+        fig.tight_layout()
+        fig.savefig(out_plot_path, dpi=300)
+        plt.close(fig)
+        tables["CrossPrice_PlotMeta"] = pd.DataFrame({"file": [out_plot_path]})
+    except Exception as e:
+        tables["CrossPrice_PlotError"] = pd.DataFrame({"error": [str(e)]})
+
     return tables

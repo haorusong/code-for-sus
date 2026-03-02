@@ -1,0 +1,22 @@
+Model: rating ~ price_usd + alternative fixed effects
+const          5.8154
+price_usd     -0.3274
+alt_Lab       -0.5019
+alt_Premium    1.5347
+R2: 0.1837
+
+
+Interpretation:
+- Price coefficient (per +$1): -0.3274 rating points
+
+Mean rating by actual price:
+ price_usd  mean_rating   n
+       4.0     4.467742  62
+       4.2     4.489362  47
+       4.5     4.110169 118
+       5.0     4.956522  92
+       5.5     4.622807 114
+       6.0     3.489362  47
+       6.5     4.378855 227
+       7.0     5.000000  47
+       7.5     2.693548  62
