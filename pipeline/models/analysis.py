@@ -1357,6 +1357,25 @@ def treatment_condition_table(df):
 
 def _build_long_wtp(df):
     """Stack Lab/Premium/Basic ratings into long format for GLM + price analyses."""
+    param_demo_cols  = ["Age_num", "Education_num", "HouseholdSize_num", "Income_num"]
+    sustain_cols     = ["SustainScore", "AttScore", "BehScore"]
+
+    # Compute LabPriceGap (participant-level) before stacking
+    if f"{COL_PRICE_LAB}_raw" in df.columns and f"{COL_PRICE_BASIC}_raw" in df.columns:
+        def _to_usd(s):
+            return pd.to_numeric(
+                s.astype(str).str.replace(r"[^0-9.\-]", "", regex=True),
+                errors="coerce"
+            )
+        df = df.copy()
+        df["_lab_usd"]   = _to_usd(df[f"{COL_PRICE_LAB}_raw"])
+        df["_basic_usd"] = _to_usd(df[f"{COL_PRICE_BASIC}_raw"])
+        df["LabPriceGap"] = df["_lab_usd"] - df["_basic_usd"]
+        df = df.drop(columns=["_lab_usd", "_basic_usd"])
+    else:
+        df = df.copy()
+        df["LabPriceGap"] = np.nan
+
     specs = [
         ("Lab", COL_RATE_LAB, COL_PRICE_LAB, COL_NUTR_LAB, COL_TASTE_LAB),
         ("Premium", COL_RATE_PREM, COL_PRICE_PREM, COL_NUTR_PREM, COL_TASTE_PREM),
@@ -1366,7 +1385,15 @@ def _build_long_wtp(df):
     for prod, dv, pcol, ncol, tcol in specs:
         if dv not in df.columns:
             continue
-        use = [c for c in [COL_PID, "Category", dv, pcol, ncol, tcol, f"{pcol}_raw"] + [d for d in DEMOG_COLS if d in df.columns] if c in df.columns]
+        extra_cols = ["HealthLabel"] if "HealthLabel" in df.columns else []
+        candidates = (
+            [COL_PID, "Category", dv, pcol, ncol, tcol, f"{pcol}_raw", "LabPriceGap"]
+            + extra_cols
+            + [d for d in DEMOG_COLS if d in df.columns]
+            + [c for c in param_demo_cols if c in df.columns]
+            + [c for c in sustain_cols if c in df.columns]
+        )
+        use = [c for c in candidates if c in df.columns]
         sub = df[use].copy()
         sub = sub.rename(columns={dv: "WTP", pcol: "PriceLvl", ncol: "NutriLvl", tcol: "TasteLvl", f"{pcol}_raw": "PriceRaw"})
         sub["Product"] = prod
@@ -1391,52 +1418,279 @@ def _build_long_wtp(df):
 
 
 def glm_wtp_models(df):
-    """Meeting-aligned GLM (regression-first) with interactions and controls."""
+    """
+    Hierarchical GLM per Jaccard & Turrisi (2003).
+    Model 1: main effects only (all continuous predictors mean-centred).
+    Model 2: Model 1 + key interactions.
+    Also outputs Type III ANOVA omnibus F-tests for Model 1.
+    """
+    from scipy.stats import f as f_dist
+
     long = _build_long_wtp(df)
     if long.empty:
         return {"Notes": pd.DataFrame({"note": ["No analyzable long-format WTP data."]})}
 
-    # Keep rows with core factors
-    need = [c for c in ["Product", "PriceLvl", "NutriLvl", "TasteLvl", "Category"] if c in long.columns]
+    need = [c for c in ["Product", "PriceLvl", "NutriLvl", "TasteLvl"] if c in long.columns]
     sub = long.dropna(subset=need).copy()
     if sub.empty:
-        return {"Notes": pd.DataFrame({"note": ["No rows with complete Product/Price/Nutrition/Taste/Category."]})}
+        return {"Notes": pd.DataFrame({"note": ["No rows with complete Product/Price/Nutrition/Taste."]})}
 
-    rhs = ["C(Product)", "PriceUSD", "C(PriceLvl)", "C(NutriLvl)", "C(TasteLvl)", "C(Category)"]
-    rhs += ["C(Product):PriceUSD", "C(Product):C(PriceLvl)"]
+    # --- Mean-centre continuous predictors ---
+    cont_cols = ["SustainScore", "PriceUSD", "LabPriceGap",
+                 "Age_num", "Education_num", "HouseholdSize_num", "Income_num"]
+    for c in cont_cols:
+        if c in sub.columns:
+            sub[f"{c}_c"] = sub[c] - sub[c].mean()
+        else:
+            sub[f"{c}_c"] = 0.0
 
-    for d in DEMOG_COLS:
-        if d in sub.columns and sub[d].dropna().astype(str).nunique() >= 2:
-            rhs.append(f"C({d})")
+    # --- Categorical demographics present with ≥2 levels ---
+    cat_demos = [d for d in ["Gender", "Marital", "Employment", "Urban_Rural"]
+                 if d in sub.columns and sub[d].dropna().astype(str).nunique() >= 2]
 
-    formula = "WTP ~ " + " + ".join(rhs)
+    # --- HealthLabel: include if present and has variance ---
+    health_terms = []
+    if "HealthLabel" in sub.columns and sub["HealthLabel"].dropna().nunique() >= 2:
+        health_terms = ["C(HealthLabel)"]
+
+    # --- Model 1: main effects ---
+    m1_cont  = ["SustainScore_c", "PriceUSD_c", "LabPriceGap_c",
+                "Age_num_c", "Education_num_c", "HouseholdSize_num_c", "Income_num_c"]
+    m1_cat   = ["C(Product)", "C(PriceLvl)", "C(NutriLvl)", "C(TasteLvl)"] + health_terms + [f"C({d})" for d in cat_demos]
+    formula1 = "WTP ~ " + " + ".join(m1_cat + m1_cont)
+
+    # --- Model 2: + key interactions ---
+    interactions = [
+        "SustainScore_c:C(Product)",
+        "SustainScore_c:C(PriceLvl)",
+        "SustainScore_c:C(NutriLvl)",
+        "LabPriceGap_c:C(Product)",
+        "PriceUSD_c:C(Product)",
+        "C(PriceLvl):C(NutriLvl)",
+    ]
+    formula2 = formula1 + " + " + " + ".join(interactions)
+
     out = {}
-    try:
-        mdl = smf.ols(formula, data=sub).fit(cov_type="HC3")
+
+    def _coef_df(mdl):
         coef = pd.DataFrame({
-            "term": mdl.params.index,
-            "coef": mdl.params.values,
+            "term":    mdl.params.index,
+            "coef":    mdl.params.values,
             "std_err": mdl.bse.values,
-            "t": mdl.tvalues.values,
-            "p": mdl.pvalues.values,
+            "t":       mdl.tvalues.values,
+            "p":       mdl.pvalues.values,
         })
         ci = mdl.conf_int()
         ci.columns = ["ci_low", "ci_high"]
-        out["GLM_Coefs"] = coef.join(ci, how="left")
-        out["GLM_Summary"] = pd.DataFrame({
-            "Metric": ["N", "R2", "Adj_R2", "F", "F_p", "AIC", "BIC", "Cov_Type", "Formula"],
-            "Value": [int(mdl.nobs), mdl.rsquared, mdl.rsquared_adj, getattr(mdl, "fvalue", np.nan),
-                      getattr(mdl, "f_pvalue", np.nan), mdl.aic, mdl.bic, mdl.cov_type, formula],
-        })
-    except Exception as e:
-        out["GLM_Error"] = pd.DataFrame({"error": [str(e)], "formula": [formula]})
+        return coef.join(ci, how="left")
 
-    # Predicted willingness by product × price
+    def _summary_df(mdl, formula, extra=None):
+        rows = {
+            "Metric": ["N", "R2", "Adj_R2", "F", "F_p", "AIC", "BIC", "Cov_Type", "Formula"],
+            "Value":  [int(mdl.nobs), mdl.rsquared, mdl.rsquared_adj,
+                       getattr(mdl, "fvalue", np.nan), getattr(mdl, "f_pvalue", np.nan),
+                       mdl.aic, mdl.bic, mdl.cov_type, formula],
+        }
+        d = pd.DataFrame(rows)
+        if extra:
+            d = pd.concat([d, pd.DataFrame({"Metric": list(extra.keys()), "Value": list(extra.values())})],
+                          ignore_index=True)
+        return d
+
+    try:
+        mdl1 = smf.ols(formula1, data=sub).fit(cov_type="HC3")
+        out["GLM_Model1_Coefs"]   = _coef_df(mdl1)
+        out["GLM_Model1_Summary"] = _summary_df(mdl1, formula1)
+    except Exception as e:
+        out["GLM_Error"] = pd.DataFrame({"error": [str(e)], "formula": [formula1]})
+        return out
+
+    try:
+        mdl2 = smf.ols(formula2, data=sub).fit(cov_type="HC3")
+
+        # ΔR² and F-change
+        dr2   = mdl2.rsquared - mdl1.rsquared
+        n     = mdl2.nobs
+        k2    = mdl2.df_model
+        k1    = mdl1.df_model
+        dk    = k2 - k1
+        df_e2 = mdl2.df_resid
+        f_chg = (dr2 / dk) / ((1 - mdl2.rsquared) / df_e2) if dk > 0 else np.nan
+        p_chg = 1 - f_dist.cdf(f_chg, dk, df_e2) if not np.isnan(f_chg) else np.nan
+
+        out["GLM_Model2_Coefs"]   = _coef_df(mdl2)
+        out["GLM_Model2_Summary"] = _summary_df(
+            mdl2, formula2,
+            {"DeltaR2": dr2, "F_change": f_chg, "p_change": p_chg,
+             "dk": dk, "df_error": df_e2}
+        )
+
+        # Backward-compat aliases
+        out["GLM_Coefs"]   = out["GLM_Model2_Coefs"]
+        out["GLM_Summary"] = out["GLM_Model2_Summary"]
+
+    except Exception as e:
+        out["GLM_Model2_Error"] = pd.DataFrame({"error": [str(e)], "formula": [formula2]})
+
+    # --- Type III omnibus F-tests for Model 1 (separate standard OLS fit) ---
+    try:
+        mdl1_ols = smf.ols(formula1, data=sub).fit()   # standard SE for anova_lm
+        anov3 = anova_lm(mdl1_ols, typ=3)
+        anov3 = anov3.reset_index().rename(columns={"index": "term", "PR(>F)": "p"})
+        out["GLM_AnovaType3"] = anov3
+    except Exception as e:
+        out["GLM_AnovaType3_Error"] = pd.DataFrame({"error": [str(e)]})
+
+    # Observed mean WTP by product × price
     if "PriceUSD" in sub.columns and sub["PriceUSD"].notna().sum() > 0:
         pred = sub.groupby(["Product", "PriceUSD"], as_index=False)["WTP"].mean().rename(columns={"WTP": "ObservedMeanWTP"})
         out["Price_WTP_Table"] = pred.sort_values(["Product", "PriceUSD"]).reset_index(drop=True)
 
-    out["LongData_Head"] = sub.head(300).reset_index(drop=True)
+    out["LongData"] = sub.reset_index(drop=True)
+    return out
+
+
+def ordered_model_sensitivity(df):
+    """
+    Ordered Logit (OrderedModel) sensitivity check mirroring glm_wtp_models().
+    Fits same Model 1 and Model 2 specifications using ordinal regression.
+    Outputs log-odds coefficients + comparison table vs OLS.
+    """
+    from statsmodels.miscmodels.ordinal_model import OrderedModel
+    import patsy
+
+    long = _build_long_wtp(df)
+    if long.empty:
+        return {"OM_Notes": pd.DataFrame({"note": ["No analyzable long-format WTP data."]})}
+
+    need = [c for c in ["Product", "PriceLvl", "NutriLvl", "TasteLvl"] if c in long.columns]
+    sub = long.dropna(subset=need).copy()
+    if sub.empty:
+        return {"OM_Notes": pd.DataFrame({"note": ["No rows with complete Product/Price/Nutrition/Taste."]})}
+
+    # Mean-centre continuous predictors (same as glm_wtp_models)
+    cont_cols = ["SustainScore", "PriceUSD", "LabPriceGap",
+                 "Age_num", "Education_num", "HouseholdSize_num", "Income_num"]
+    for c in cont_cols:
+        if c in sub.columns:
+            sub[f"{c}_c"] = sub[c] - sub[c].mean()
+        else:
+            sub[f"{c}_c"] = 0.0
+
+    cat_demos = [d for d in ["Gender", "Marital", "Employment", "Urban_Rural"]
+                 if d in sub.columns and sub[d].dropna().astype(str).nunique() >= 2]
+
+    m1_cont = ["SustainScore_c", "PriceUSD_c", "LabPriceGap_c",
+               "Age_num_c", "Education_num_c", "HouseholdSize_num_c", "Income_num_c"]
+    m1_cat  = ["C(Product)", "C(PriceLvl)", "C(NutriLvl)", "C(TasteLvl)"] + [f"C({d})" for d in cat_demos]
+    formula1 = " + ".join(m1_cat + m1_cont)
+
+    interactions = [
+        "SustainScore_c:C(Product)",
+        "SustainScore_c:C(PriceLvl)",
+        "SustainScore_c:C(NutriLvl)",
+        "LabPriceGap_c:C(Product)",
+        "PriceUSD_c:C(Product)",
+        "C(PriceLvl):C(NutriLvl)",
+    ]
+    formula2 = formula1 + " + " + " + ".join(interactions)
+
+    # WTP must be integer 1–7 for ordered model
+    sub["WTP_int"] = sub["WTP"].round().astype(int).clip(1, 7)
+
+    out = {}
+
+    def _fit_om(formula_rhs, label):
+        try:
+            # Use dmatrices so y and X rows are aligned (patsy drops NaN rows from both)
+            full_formula = "WTP_int ~ " + formula_rhs
+            y_mat, X = patsy.dmatrices(full_formula, data=sub, return_type="dataframe")
+            # Drop Intercept — OrderedModel uses threshold parameters instead
+            X = X.loc[:, X.columns != "Intercept"]
+            # Sanity: remove any column that is constant (all same value)
+            X = X.loc[:, X.nunique() > 1]
+            y = y_mat.iloc[:, 0].round().astype(int).clip(1, 7).values
+            mod = OrderedModel(y, X, distr="logit")
+            res = mod.fit(method="bfgs", disp=False, maxiter=500)
+
+            # OrderedModel stores thresholds as params with "/" in name
+            thresh_mask = res.params.index.str.contains("/", regex=False)
+            n_thresh    = thresh_mask.sum()
+            n_coef      = len(res.params) - n_thresh
+
+            coef_mask   = ~thresh_mask
+            coef_params = res.params[coef_mask]
+            coef_bse    = res.bse[coef_mask]
+            coef_tval   = res.tvalues[coef_mask]
+            coef_pval   = res.pvalues[coef_mask]
+            ci          = res.conf_int()[coef_mask]
+
+            coef_df = pd.DataFrame({
+                "term":    coef_params.index,
+                "log_odds": coef_params.values,
+                "std_err": coef_bse.values,
+                "z":       coef_tval.values,
+                "p":       coef_pval.values,
+                "ci_low":  ci.iloc[:, 0].values,
+                "ci_high": ci.iloc[:, 1].values,
+            })
+
+            thresh_params = res.params[thresh_mask]
+            thresh_df = pd.DataFrame({
+                "threshold": thresh_params.index,
+                "value":     thresh_params.values,
+            })
+
+            summary_df = pd.DataFrame({
+                "Metric": ["N", "AIC", "BIC", "LogLikelihood", "Converged", "Formula"],
+                "Value":  [int(len(y)), res.aic, res.bic,
+                           res.llf, str(res.mle_retvals.get("converged", "unknown")),
+                           formula_rhs],
+            })
+
+            return coef_df, thresh_df, summary_df, None
+        except Exception as e:
+            return None, None, None, str(e)
+
+    coef1, thresh1, summ1, err1 = _fit_om(formula1, "Model1")
+    if err1:
+        out["OM_Model1_Error"] = pd.DataFrame({"error": [err1]})
+    else:
+        out["OM_Model1_Coefs"]     = coef1
+        out["OM_Model1_Thresholds"] = thresh1
+        out["OM_Model1_Summary"]   = summ1
+
+    coef2, thresh2, summ2, err2 = _fit_om(formula2, "Model2")
+    if err2:
+        out["OM_Model2_Error"] = pd.DataFrame({"error": [err2]})
+    else:
+        out["OM_Model2_Coefs"]     = coef2
+        out["OM_Model2_Thresholds"] = thresh2
+        out["OM_Model2_Summary"]   = summ2
+
+    # Comparison table: OLS β vs OM log-odds for Model 1 terms
+    if coef1 is not None:
+        try:
+            ols_res = smf.ols("WTP ~ " + formula1, data=sub).fit(cov_type="HC3")
+            ols_coef = pd.DataFrame({
+                "term":    ols_res.params.index,
+                "OLS_coef": ols_res.params.values,
+                "OLS_p":   ols_res.pvalues.values,
+            }).query("term != 'Intercept'")
+
+            comp = pd.merge(
+                ols_coef,
+                coef1[["term", "log_odds", "p"]].rename(columns={"p": "OM_p"}),
+                on="term", how="outer"
+            )
+            comp["Direction_Match"] = (np.sign(comp["OLS_coef"]) == np.sign(comp["log_odds"]))
+            comp["OLS_sig"]  = comp["OLS_p"] < 0.05
+            comp["OM_sig"]   = comp["OM_p"]  < 0.05
+            comp["Sig_Match"] = comp["OLS_sig"] == comp["OM_sig"]
+            out["OM_Comparison"] = comp.reset_index(drop=True)
+        except Exception as e:
+            out["OM_Comparison_Error"] = pd.DataFrame({"error": [str(e)]})
+
     return out
 
 

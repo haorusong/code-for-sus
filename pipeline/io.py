@@ -9,6 +9,8 @@ def _norm_header(s):
 
 
 def load_data(path=DATA_FILE):
+    if str(path).lower().endswith(".csv"):
+        return load_data_from_qualtrics_csv(path)
     df = pd.read_excel(path)
     df = df.loc[:, ~df.columns.astype(str).str.match(r"^Unnamed", na=False)]
     df.columns = [_norm_header(c) for c in df.columns]
@@ -372,5 +374,264 @@ def add_numeric_level_cols(df):
             df[f"{proxy}_num"] = df[proxy].astype(str).map(mapping).astype("Int64")
         else:
             df[f"{proxy}_num"] = pd.Series([pd.NA]*len(df), dtype="Int64")
+    return df
+
+
+def load_data_from_qualtrics_csv(path, scenario_book_path=SCENARIO_BOOK):
+    """
+    Load a raw Qualtrics CSV export (new survey format).
+
+    Qualtrics exports 3 header rows:
+      row 0 = column header names  (kept as df.columns)
+      row 1 = question text        (skipped)
+      row 2 = import IDs           (skipped)
+
+    Each respondent saw exactly ONE scenario block (Q42–Q71).
+    Scenario n maps to Q(41+n): Q42→1, Q43→2, …, Q71→30.
+
+    USD prices by Q-range (from original study design):
+      Q42-47 : Basic $4.00, Premium $6.50, Lab $7.50
+      Q48-53 : Basic $5.00, Premium $5.00, Lab $6.50
+      Q54-59 : Basic $4.50, Premium $6.50, Lab $6.50
+      Q60-65 : Basic $4.20, Premium $7.00, Lab $6.00
+      Q66-71 : Basic $5.50, Premium $5.50, Lab $4.50
+    """
+    USD_MAP = {
+        (42, 47): {"Basic": 4.0,  "Premium": 6.5, "Lab": 7.5},
+        (48, 53): {"Basic": 5.0,  "Premium": 5.0, "Lab": 6.5},
+        (54, 59): {"Basic": 4.5,  "Premium": 6.5, "Lab": 6.5},
+        (60, 65): {"Basic": 4.2,  "Premium": 7.0, "Lab": 6.0},
+        (66, 71): {"Basic": 5.5,  "Premium": 5.5, "Lab": 4.5},
+    }
+
+    def _get_usd(q, product):
+        for (a, b), m in USD_MAP.items():
+            if a <= q <= b:
+                return m[product]
+        return np.nan
+
+    LVL_MAP = {1: "Low", 2: "Mid", 3: "High"}
+
+    # Load skipping the two Qualtrics meta-rows
+    df_raw = pd.read_csv(path, skiprows=[1, 2], low_memory=False)
+
+    # Keep only finished responses
+    df_raw = df_raw[df_raw["Finished"].astype(str) == "1"].copy()
+    df_raw = df_raw.reset_index(drop=True)
+
+    # Coerce all Qualtrics item cols to numeric
+    for c in df_raw.columns:
+        if c.startswith("Q"):
+            df_raw[c] = pd.to_numeric(df_raw[c], errors="coerce")
+
+    # Load scenario book
+    sb = pd.read_excel(scenario_book_path)
+    sb = sb.set_index("Scenario")
+
+    rows = []
+    for idx, row in df_raw.iterrows():
+        # Find which scenario block this respondent answered
+        scenario_q = None
+        for q in range(42, 72):
+            cols = [f"Q{q}_1", f"Q{q}_2", f"Q{q}_3"]
+            if all(c in df_raw.columns for c in cols):
+                if row[[f"Q{q}_1", f"Q{q}_2", f"Q{q}_3"]].notna().any():
+                    scenario_q = q
+                    break
+        if scenario_q is None:
+            continue
+
+        scenario_num = scenario_q - 41          # Q42→1 … Q71→30
+        sb_row = sb.loc[scenario_num] if scenario_num in sb.index else None
+
+        rec = {
+            COL_PID:          f"P{idx+1}",
+            COL_SCENARIO:     scenario_num,
+            COL_RATE_LAB:     row.get(f"Q{scenario_q}_1", np.nan),
+            COL_RATE_PREM:    row.get(f"Q{scenario_q}_2", np.nan),
+            COL_RATE_BASIC:   row.get(f"Q{scenario_q}_3", np.nan),
+            # Demographics (raw codes — same coding as original)
+            "Age":            row.get("Q22", np.nan),
+            "Gender":         row.get("Q23", np.nan),
+            "Education":      row.get("Q24", np.nan),
+            "Marital":        row.get("Q25", np.nan),
+            "HouseholdSize":  row.get("Q26", np.nan),
+            "Income":         row.get("Q27", np.nan),
+            "Employment":     row.get("Q28", np.nan),
+            "Urban_Rural":    row.get("Q29", np.nan),
+            # USD prices
+            f"{COL_PRICE_LAB}_raw":   _get_usd(scenario_q, "Lab"),
+            f"{COL_PRICE_PREM}_raw":  _get_usd(scenario_q, "Premium"),
+            f"{COL_PRICE_BASIC}_raw": _get_usd(scenario_q, "Basic"),
+        }
+
+        # Attitude / Behavior / Economic items
+        for item in ATT_ITEMS + BEH_ITEMS + ECON_ITEMS:
+            rec[item] = row.get(item, np.nan)
+
+        # Scenario-book levels
+        if sb_row is not None:
+            for prod_col, dest in [
+                ("Price_Lab",       COL_PRICE_LAB),
+                ("Price_Premium",   COL_PRICE_PREM),
+                ("Price_Basic",     COL_PRICE_BASIC),
+                ("Nutrition_Lab",   COL_NUTR_LAB),
+                ("Nutrition_Premium", COL_NUTR_PREM),
+                ("Nutrition_Basic", COL_NUTR_BASIC),
+                ("Taste_Lab",       COL_TASTE_LAB),
+                ("Taste_Premium",   COL_TASTE_PREM),
+                ("Taste_Basic",     COL_TASTE_BASIC),
+            ]:
+                val = sb_row.get(prod_col, np.nan)
+                rec[dest] = LVL_MAP.get(int(val), str(val)) if not pd.isna(val) else np.nan
+
+        rows.append(rec)
+
+    df = pd.DataFrame(rows).reset_index(drop=True)
+    return df
+
+
+def load_old_xlsx_as_long(path=None, scenario_book_path=SCENARIO_BOOK):
+    """
+    Load the September 2025 xlsx (no health label) into the same long-format
+    as load_data_from_qualtrics_csv().
+
+    xlsx structure:
+      row 0  = column names (ResponseId, Q2_1, …)
+      row 1  = label text  → skip
+      rows 2+ = data
+    """
+    from config.constants import OLD_DATA_FILE
+    if path is None:
+        path = OLD_DATA_FILE
+
+    USD_MAP = {
+        (42, 47): {"Basic": 4.0,  "Premium": 6.5, "Lab": 7.5},
+        (48, 53): {"Basic": 5.0,  "Premium": 5.0, "Lab": 6.5},
+        (54, 59): {"Basic": 4.5,  "Premium": 6.5, "Lab": 6.5},
+        (60, 65): {"Basic": 4.2,  "Premium": 7.0, "Lab": 6.0},
+        (66, 71): {"Basic": 5.5,  "Premium": 5.5, "Lab": 4.5},
+    }
+
+    def _get_usd(q, product):
+        for (a, b), m in USD_MAP.items():
+            if a <= q <= b:
+                return m[product]
+        return np.nan
+
+    LVL_MAP = {1: "Low", 2: "Mid", 3: "High"}
+
+    df_raw = pd.read_excel(path, header=0, skiprows=[1])
+    # Coerce Q-columns to numeric
+    for c in df_raw.columns:
+        if str(c).startswith("Q"):
+            df_raw[c] = pd.to_numeric(df_raw[c], errors="coerce")
+
+    sb = pd.read_excel(scenario_book_path).set_index("Scenario")
+
+    rows = []
+    for idx, row in df_raw.iterrows():
+        scenario_q = None
+        for q in range(42, 72):
+            cols = [f"Q{q}_1", f"Q{q}_2", f"Q{q}_3"]
+            if all(c in df_raw.columns for c in cols):
+                if row[[f"Q{q}_1", f"Q{q}_2", f"Q{q}_3"]].notna().any():
+                    scenario_q = q
+                    break
+        if scenario_q is None:
+            continue
+
+        scenario_num = scenario_q - 41
+        sb_row = sb.loc[scenario_num] if scenario_num in sb.index else None
+
+        pid = str(row.get("ResponseId", f"OLD_P{idx+1}"))
+        rec = {
+            COL_PID:          f"OLD_{pid}",
+            COL_SCENARIO:     scenario_num,
+            COL_RATE_LAB:     row.get(f"Q{scenario_q}_1", np.nan),
+            COL_RATE_PREM:    row.get(f"Q{scenario_q}_2", np.nan),
+            COL_RATE_BASIC:   row.get(f"Q{scenario_q}_3", np.nan),
+            "Age":            row.get("Q22", np.nan),
+            "Gender":         row.get("Q23", np.nan),
+            "Education":      row.get("Q24", np.nan),
+            "Marital":        row.get("Q25", np.nan),
+            "HouseholdSize":  row.get("Q26", np.nan),
+            "Income":         row.get("Q27", np.nan),
+            "Employment":     row.get("Q28", np.nan),
+            "Urban_Rural":    row.get("Q29", np.nan),
+            f"{COL_PRICE_LAB}_raw":   _get_usd(scenario_q, "Lab"),
+            f"{COL_PRICE_PREM}_raw":  _get_usd(scenario_q, "Premium"),
+            f"{COL_PRICE_BASIC}_raw": _get_usd(scenario_q, "Basic"),
+        }
+
+        for item in ATT_ITEMS + BEH_ITEMS + ECON_ITEMS:
+            rec[item] = row.get(item, np.nan)
+
+        if sb_row is not None:
+            for prod_col, dest in [
+                ("Price_Lab",         COL_PRICE_LAB),
+                ("Price_Premium",     COL_PRICE_PREM),
+                ("Price_Basic",       COL_PRICE_BASIC),
+                ("Nutrition_Lab",     COL_NUTR_LAB),
+                ("Nutrition_Premium", COL_NUTR_PREM),
+                ("Nutrition_Basic",   COL_NUTR_BASIC),
+                ("Taste_Lab",         COL_TASTE_LAB),
+                ("Taste_Premium",     COL_TASTE_PREM),
+                ("Taste_Basic",       COL_TASTE_BASIC),
+            ]:
+                val = sb_row.get(prod_col, np.nan)
+                rec[dest] = LVL_MAP.get(int(val), str(val)) if not pd.isna(val) else np.nan
+
+        rows.append(rec)
+
+    df = pd.DataFrame(rows).reset_index(drop=True)
+    return df
+
+
+def load_merged_data(new_path=None, old_path=None, scenario_book_path=SCENARIO_BOOK):
+    """
+    Merge new (April 2026, HealthLabel=1) and old (Sept 2025, HealthLabel=0) surveys.
+    Returns a wide-format dataframe with HealthLabel column.
+    """
+    from config.constants import DATA_FILE, OLD_DATA_FILE
+    if new_path is None:
+        new_path = DATA_FILE
+    if old_path is None:
+        old_path = OLD_DATA_FILE
+
+    new_df = load_data_from_qualtrics_csv(new_path, scenario_book_path)
+    new_df["HealthLabel"] = 1
+
+    old_df = load_old_xlsx_as_long(old_path, scenario_book_path)
+    old_df["HealthLabel"] = 0
+
+    merged = pd.concat([new_df, old_df], ignore_index=True)
+    return merged
+
+
+def recode_to_parametric(df):
+    """Convert ordinal demographic codes to parametric numeric equivalents."""
+    for col, mapping, new_col in [
+        ("Age",           AGE_MIDPOINTS,      "Age_num"),
+        ("Education",     EDUCATION_YEARS,    "Education_num"),
+        ("HouseholdSize", HOUSEHOLD_SIZE_NUM, "HouseholdSize_num"),
+        ("Income",        INCOME_MIDPOINTS,   "Income_num"),
+    ]:
+        if col in df.columns:
+            df[new_col] = pd.to_numeric(df[col], errors="coerce").map(mapping)
+        else:
+            df[new_col] = np.nan
+    return df
+
+
+def add_sustain_score(df):
+    """Compute continuous SustainScore (mean of ATT + BEH items), AttScore, BehScore."""
+    att_present = [c for c in ATT_ITEMS if c in df.columns]
+    beh_present = [c for c in BEH_ITEMS if c in df.columns]
+    all_present = att_present + beh_present
+
+    df["AttScore"]     = df[att_present].mean(axis=1)     if att_present else np.nan
+    df["BehScore"]     = df[beh_present].mean(axis=1)     if beh_present else np.nan
+    df["SustainScore"] = df[all_present].mean(axis=1)     if all_present else np.nan
     return df
 

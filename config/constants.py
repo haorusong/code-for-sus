@@ -37,7 +37,8 @@ from statsmodels.multivariate.manova import MANOVA
 # Files + core settings
 # -------------------------
 
-DATA_FILE = "data/raw/Exploring Consumer Preferences and Willingness to Pay for Sustainable and Lab-Grown Tuna_September 2, 2025_15.40 2 copy.xlsx"
+DATA_FILE = r"F:\downloads\Exploring Consumer Preferences and Willingness to Pay for Sustainable and Lab-Grown Tuna -B_April 6, 2026_13.06.csv"
+OLD_DATA_FILE = r"C:\Users\XOS\Desktop\勾八人\code-for-sus\data\raw\Exploring Consumer Preferences and Willingness to Pay for Sustainable and Lab-Grown Tuna_September 2, 2025_15.40 2 copy.xlsx"
 
 SCENARIO_BOOK = "data/raw/scenario book.xlsx"
 DEMO_CODEBOOK = "data/raw/Demographic_Codebook.xlsx"
@@ -89,6 +90,12 @@ DEMOG_COLS = ["Age", "Gender", "Education", "Marital", "HouseholdSize", "Income"
 ATT_ITEMS  = ["Q2_1","Q3_1","Q4_1","Q5_1","Q6_1"]
 BEH_ITEMS  = ["Q8_1","Q9_1","Q10_1","Q11_1","Q12_1","Q13_1","Q14_1"]
 ECON_ITEMS = ["Q15_1","Q16_1","Q17_1","Q18_1","Q19_1","Q20_1"]
+
+# Parametric demographic recoding maps (ordinal → numeric)
+EDUCATION_YEARS    = {1: 10, 2: 12, 3: 16, 4: 18, 5: 22}
+AGE_MIDPOINTS      = {1: 21, 2: 29, 3: 39, 4: 49, 5: 59, 6: 69, 7: 80}
+HOUSEHOLD_SIZE_NUM = {1: 1,  2: 2,  3: 3,  4: 4,  5: 5}
+INCOME_MIDPOINTS   = {1: 5,  2: 17, 3: 37, 4: 62, 5: 87, 6: 125, 7: 175}
 
 # -------------------------
 # Utilities

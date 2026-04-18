@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Health &amp; Safety Label — GLM Tables</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: "Times New Roman", serif;
+  font-size: 12.5px; color: #111;
+  max-width: 1080px; margin: 40px auto; padding: 0 24px;
+  background: #fafafa;
+}
+h1 { font-size: 17px; font-weight: bold; margin: 0 0 4px; }
+h2 { font-size: 14px; font-weight: bold; border-bottom: 1px solid #ccc;
+      padding-bottom: 4px; margin: 44px 0 10px; }
+p.note { font-size: 11px; color: #555; margin: 0 0 18px; }
+.nav { font-size: 12px; margin-bottom: 20px; }
+.nav a { color: #0969da; text-decoration: none; margin-right: 14px; }
+.nav a:hover { text-decoration: underline; }
+table { border-collapse: collapse; width: 100%; margin-bottom: 6px; }
+th, td { padding: 4px 7px; vertical-align: middle; white-space: nowrap; }
+th { border-top: 2px solid #111; border-bottom: 1px solid #111;
+      font-weight: bold; text-align: center; background: #fff; }
+th.pred { text-align: left; white-space: normal; min-width: 200px; }
+td.num  { text-align: right; }
+td.msd  { text-align: center; background: #f5f0ff; font-size: 11.5px; color: #444; white-space: nowrap; }
+th.msd  { background: #f5f0ff; }
+td.sig  { text-align: center; font-weight: bold; letter-spacing: 0.02em; }
+td.grey { color: #bbb; }
+tr.fhdr td { font-weight: bold; background: #f7f7f7; padding-top: 8px; }
+tr.ix-sec td { background: #eef2ff; padding: 6px 7px 3px; font-size: 12px;
+                border-top: 2px solid #99b; color: #224; }
+td.ind1 { padding-left: 16px; text-align: left; white-space: normal; }
+td.ind2 { padding-left: 28px; text-align: left; white-space: normal; }
+tr.sec-hdr td { font-style: italic; color: #666; padding-top: 9px;
+                  font-size: 11px; border-top: 1px solid #e0e0e0;
+                  white-space: normal; }
+tr.divider td { border-top: 1.5px solid #bbb; padding: 0; height: 0; }
+tr.footer td { border-top: 2px solid #111; font-style: italic;
+                 font-size: 11px; padding-top: 5px; white-space: normal; }
+tr:not(.fhdr):not(.sec-hdr):not(.divider):not(.footer):not(.ix-sec):hover td {
+  background: #f0f5ff; }
+td.sig1, .sig1  { color: #c0392b; }
+td.sig5, .sig5  { color: #e67e22; }
+td.sig10, .sig10 { color: #7d6608; }
+.ref { font-weight: normal; font-size: 11px; color: #888; }
+.tnote { font-size: 11px; border-top: 1px solid #bbb;
+           padding-top: 6px; margin-top: 8px; color: #333; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a href="tables_preview.html">&#8592; GLM Tables</a>
+  <a href="charts_preview.html">&#8592; Charts</a>
+  <a href="om_sensitivity.html">&#8592; OM Sensitivity</a>
+</div>
+
+<h1>Health &amp; Safety Label — GLM Analysis</h1>
+<p class="note">
+  Merged: Sept 2025 no label (<i>n</i>=273) + April 2026 label (<i>n</i>=320) &nbsp;|&nbsp;
+  OLS, HC3 robust SE &nbsp;|&nbsp; Continuous predictors mean-centred &nbsp;|&nbsp;
+  Bold rows = omnibus Type&nbsp;III <i>F</i>-test &nbsp;|&nbsp;
+  Indented rows = pairwise HC3 contrast vs reference &nbsp;|&nbsp;
+  *** <i>p</i>&lt;.01 &nbsp; ** <i>p</i>&lt;.05 &nbsp; * <i>p</i>&lt;.10
+</p>
+
+<h2>Table 1 &middot; Main Effects Model (N&nbsp;=&nbsp;1743)</h2>
+<table>
+  <thead>
+    <tr>
+      <th class="pred" rowspan="2">Predictor</th>
+      <th class="num" rowspan="2"><i>df</i></th>
+      <th class="num" rowspan="2"><i>F</i></th>
+      <th class="num" rowspan="2">&beta;</th>
+      <th class="num" rowspan="2">SE</th>
+      <th class="num" rowspan="2"><i>t</i></th>
+      <th class="num" rowspan="2"><i>p</i></th>
+      <th class="num" rowspan="2">Sig.</th>
+      <th class="num msd" rowspan="2">Mean&nbsp;(SD)</th>
+    </tr>
+    <tr></tr>
+  </thead>
+  <tbody>
+<tr class="sec-hdr"><td colspan="9"><i>Product Attributes</i></td></tr>
+<tr class="fhdr"><td><b>Product Type</b> <span class="ref">ref:&nbsp;Basic</span></td><td class="num">2</td><td class="num sig1">36.31</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">4.26 (1.83)</td></tr>
+<tr><td class="ind2">Lab-grown</td><td class="num">—</td><td class="num">—</td><td class="num ">0.030</td><td class="num ">0.079</td><td class="num ">0.373</td><td class="num ">0.709</td><td class="sig "></td><td class="num msd">3.64 (2.13)</td></tr>
+<tr><td class="ind2">Premium</td><td class="num">—</td><td class="num">—</td><td class="num sig1">0.441</td><td class="num sig1">0.055</td><td class="num sig1">8.028</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">5.21 (1.71)</td></tr>
+<tr class="fhdr"><td><b>Price Level</b> <span class="ref">ref:&nbsp;Low</span></td><td class="num">2</td><td class="num ">0.39</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num ">0.680</td><td class="sig "></td><td class="num msd">4.32 (1.90)</td></tr>
+<tr><td class="ind2">Mid</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.001</td><td class="num ">0.193</td><td class="num ">-0.007</td><td class="num ">0.995</td><td class="sig "></td><td class="num msd">4.47 (1.98)</td></tr>
+<tr><td class="ind2">High</td><td class="num">—</td><td class="num">—</td><td class="num sig5">0.694</td><td class="num sig5">0.305</td><td class="num sig5">2.279</td><td class="num sig5">0.023</td><td class="sig sig5">**</td><td class="num msd">4.30 (2.05)</td></tr>
+<tr class="fhdr"><td><b>Nutrition Level</b> <span class="ref">ref:&nbsp;Low</span></td><td class="num">2</td><td class="num sig1">70.62</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">—</td></tr>
+<tr><td class="ind2">Mid</td><td class="num">—</td><td class="num">—</td><td class="num sig1">1.266</td><td class="num sig1">0.168</td><td class="num sig1">7.519</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">4.09 (1.94)</td></tr>
+<tr><td class="ind2">High</td><td class="num">—</td><td class="num">—</td><td class="num sig1">0.642</td><td class="num sig1">0.084</td><td class="num sig1">7.606</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">4.65 (2.03)</td></tr>
+<tr class="fhdr"><td><b>Taste Level</b> <span class="ref">ref:&nbsp;Low</span></td><td class="num">2</td><td class="num sig1">5.80</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1">0.003</td><td class="sig sig1">***</td><td class="num msd">3.63 (2.17)</td></tr>
+<tr><td class="ind2">Mid</td><td class="num">—</td><td class="num">—</td><td class="num sig1">0.574</td><td class="num sig1">0.143</td><td class="num sig1">4.020</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">4.02 (1.91)</td></tr>
+<tr><td class="ind2">High</td><td class="num">—</td><td class="num">—</td><td class="num sig1">0.308</td><td class="num sig1">0.101</td><td class="num sig1">3.036</td><td class="num sig1">0.002</td><td class="sig sig1">***</td><td class="num msd">4.90 (1.91)</td></tr>
+<tr class="fhdr"><td><b>Health &amp; Safety Label</b> <span class="ref">ref:&nbsp;No</span></td><td class="num">1</td><td class="num ">0.34</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num ">0.561</td><td class="sig "></td><td class="num msd">4.30 (2.06)</td></tr>
+<tr><td class="ind2">Yes</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.519</td><td class="num ">0.344</td><td class="num ">-1.508</td><td class="num ">0.132</td><td class="sig "></td><td class="num msd">4.42 (1.95)</td></tr>
+<tr class="divider"><td colspan="9"></td></tr>
+<tr class="sec-hdr"><td colspan="9"><i>Psychographic &amp; Price</i></td></tr>
+<tr><td class="ind1">Sustainability Orientation</td><td class="num">—</td><td class="num">—</td><td class="num sig1">0.236</td><td class="num sig1">0.045</td><td class="num sig1">5.238</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">4.81 (1.12)</td></tr>
+<tr><td class="ind1">Price (USD)</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.227</td><td class="num ">0.162</td><td class="num ">-1.396</td><td class="num ">0.163</td><td class="sig "></td><td class="num msd">5.65 (1.07)</td></tr>
+<tr><td class="ind1">Lab Price Gap</td><td class="num">—</td><td class="num">—</td><td class="num ">0.052</td><td class="num ">0.086</td><td class="num ">0.611</td><td class="num ">0.541</td><td class="sig "></td><td class="num msd">1.57 (1.51)</td></tr>
+<tr class="divider"><td colspan="9"></td></tr>
+<tr class="sec-hdr"><td colspan="9"><i>Demographics</i></td></tr>
+<tr><td class="ind1">Age</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.004</td><td class="num ">0.005</td><td class="num ">-0.859</td><td class="num ">0.390</td><td class="sig "></td><td class="num msd">40.09 (13.17)</td></tr>
+<tr><td class="ind1">Education</td><td class="num">—</td><td class="num">—</td><td class="num sig10">0.036</td><td class="num sig10">0.020</td><td class="num sig10">1.790</td><td class="num sig10">0.073</td><td class="sig sig10">*</td><td class="num msd">15.28 (2.54)</td></tr>
+<tr><td class="ind1">Household Size</td><td class="num">—</td><td class="num">—</td><td class="num ">0.019</td><td class="num ">0.042</td><td class="num ">0.451</td><td class="num ">0.652</td><td class="sig "></td><td class="num msd">2.62 (1.29)</td></tr>
+<tr><td class="ind1">Income</td><td class="num">—</td><td class="num">—</td><td class="num ">0.001</td><td class="num ">0.001</td><td class="num ">1.147</td><td class="num ">0.251</td><td class="sig "></td><td class="num msd">73.32 (47.35)</td></tr>
+<tr class="fhdr"><td><b>Gender</b> <span class="ref">ref:&nbsp;Male</span></td><td class="num">3</td><td class="num ">0.09</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num ">0.963</td><td class="sig "></td><td class="num msd">—</td></tr>
+<tr class="fhdr"><td><b>Marital Status</b> <span class="ref">ref:&nbsp;Single</span></td><td class="num">4</td><td class="num ">0.76</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num ">0.550</td><td class="sig "></td><td class="num msd">—</td></tr>
+<tr class="fhdr"><td><b>Employment</b> <span class="ref">ref:&nbsp;Full-time</span></td><td class="num">6</td><td class="num ">0.30</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num ">0.937</td><td class="sig "></td><td class="num msd">—</td></tr>
+<tr class="fhdr"><td><b>Residential Area</b> <span class="ref">ref:&nbsp;Urban</span></td><td class="num">2</td><td class="num ">0.04</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num ">0.960</td><td class="sig "></td><td class="num msd">—</td></tr>
+<tr class="footer"><td colspan="9"><i>N</i> = 1743 &nbsp;|&nbsp; <i>R</i>² = 0.157 &nbsp;|&nbsp; Adj. <i>R</i>² = 0.135</td></tr>
+  </tbody>
+</table>
+<div class="tnote">
+  <b>Note.</b> <i>df</i> and <i>F</i> apply to omnibus Type III tests (bold rows).
+  &beta;, SE, and <i>t</i> apply to pairwise HC3 contrasts vs reference (indented rows).
+  Mean (SD) = mean WTP (1–7) for that level; for continuous predictors, mean and SD of the raw variable.
+  Health &amp; Safety Label: No = Sept 2025 survey, Yes = April 2026 survey.
+</div>
+
+<h2>Table 2 &middot; All Two-Way Interaction Effects (N&nbsp;=&nbsp;1743)</h2>
+<p class="note">
+  Bold rows = omnibus Type III <i>F</i> for that interaction block (from full interaction model).
+  Indented rows = individual contrast coefficients (HC3 robust SE).
+</p>
+<table>
+  <thead>
+    <tr>
+      <th class="pred" rowspan="2">Predictor</th>
+      <th class="num" rowspan="2"><i>df</i></th>
+      <th class="num" rowspan="2"><i>F</i></th>
+      <th class="num" rowspan="2">&beta;</th>
+      <th class="num" rowspan="2">SE</th>
+      <th class="num" rowspan="2"><i>t</i></th>
+      <th class="num" rowspan="2"><i>p</i></th>
+      <th class="num" rowspan="2">Sig.</th>
+      <th class="num msd" rowspan="2">Mean&nbsp;(SD)</th>
+    </tr>
+    <tr></tr>
+  </thead>
+  <tbody>
+<tr class="ix-sec"><td colspan="9"><b>1. Product Type Interactions</b></td></tr>
+<tr class="fhdr"><td><b>Product × Price Level</b></td><td class="num">4</td><td class="num sig1">24.63</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Lab × Price Mid</td><td class="num">—</td><td class="num">—</td><td class="num ">0.391</td><td class="num ">0.257</td><td class="num ">1.525</td><td class="num ">0.127</td><td class="sig "></td><td class="num msd">3.92 (2.17)</td></tr>
+<tr><td class="ind2">  Lab × Price High</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.362</td><td class="num ">0.245</td><td class="num ">-1.476</td><td class="num ">0.140</td><td class="sig "></td><td class="num msd">3.46 (2.09)</td></tr>
+<tr><td class="ind2">  Premium × Price Mid</td><td class="num">—</td><td class="num">—</td><td class="num ">0.246</td><td class="num ">0.322</td><td class="num ">0.765</td><td class="num ">0.444</td><td class="sig "></td><td class="num msd">5.25 (1.70)</td></tr>
+<tr><td class="ind2">  Premium × Price High</td><td class="num">—</td><td class="num">—</td><td class="num ">0.195</td><td class="num ">0.312</td><td class="num ">0.625</td><td class="num ">0.532</td><td class="sig "></td><td class="num msd">5.17 (1.71)</td></tr>
+<tr class="fhdr"><td><b>Product × Nutrition Level</b></td><td class="num">4</td><td class="num sig1">39.43</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Lab × Nutrition Mid</td><td class="num">—</td><td class="num">—</td><td class="num sig10">-0.171</td><td class="num sig10">0.101</td><td class="num sig10">-1.694</td><td class="num sig10">0.090</td><td class="sig sig10">*</td><td class="num msd">3.75 (2.11)</td></tr>
+<tr><td class="ind2">  Lab × Nutrition High</td><td class="num">—</td><td class="num">—</td><td class="num sig5">0.201</td><td class="num sig5">0.081</td><td class="num sig5">2.486</td><td class="num sig5">0.013</td><td class="sig sig5">**</td><td class="num msd">3.53 (2.16)</td></tr>
+<tr><td class="ind2">  Premium × Nutrition Mid</td><td class="num">—</td><td class="num">—</td><td class="num ">0.000</td><td class="num ">0.000</td><td class="num ">0.981</td><td class="num ">0.327</td><td class="sig "></td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Premium × Nutrition High</td><td class="num">—</td><td class="num">—</td><td class="num sig1">0.441</td><td class="num sig1">0.055</td><td class="num sig1">8.028</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">5.21 (1.71)</td></tr>
+<tr class="fhdr"><td><b>Product × Taste Level</b></td><td class="num">4</td><td class="num sig1">105.13</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Lab × Taste Mid</td><td class="num">—</td><td class="num">—</td><td class="num sig1">-0.863</td><td class="num sig1">0.156</td><td class="num sig1">-5.523</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">3.31 (2.00)</td></tr>
+<tr><td class="ind2">  Lab × Taste High</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.133</td><td class="num ">0.129</td><td class="num ">-1.029</td><td class="num ">0.303</td><td class="sig "></td><td class="num msd">3.98 (2.19)</td></tr>
+<tr><td class="ind2">  Premium × Taste Mid</td><td class="num">—</td><td class="num">—</td><td class="num sig10">0.000</td><td class="num sig10">0.000</td><td class="num sig10">1.912</td><td class="num sig10">0.056</td><td class="sig sig10">*</td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Premium × Taste High</td><td class="num">—</td><td class="num">—</td><td class="num sig1">0.441</td><td class="num sig1">0.055</td><td class="num sig1">8.028</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">5.21 (1.71)</td></tr>
+<tr class="fhdr"><td><b>Product × Health &amp; Safety Label</b></td><td class="num">2</td><td class="num sig1">4.98</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1">0.007</td><td class="sig sig1">***</td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Lab × Health Label</td><td class="num">—</td><td class="num">—</td><td class="num sig5">0.905</td><td class="num sig5">0.377</td><td class="num sig5">2.400</td><td class="num sig5">0.016</td><td class="sig sig5">**</td><td class="num msd">3.96 (2.14)</td></tr>
+<tr><td class="ind2">  Premium × Health Label</td><td class="num">—</td><td class="num">—</td><td class="num ">0.379</td><td class="num ">0.585</td><td class="num ">0.647</td><td class="num ">0.517</td><td class="sig "></td><td class="num msd">5.09 (1.70)</td></tr>
+<tr class="ix-sec"><td colspan="9"><b>2. Price Level Interactions</b></td></tr>
+<tr class="fhdr"><td><b>Price × Nutrition Level</b></td><td class="num">4</td><td class="num sig1">19.10</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Mid × Nutrition Mid</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.234</td><td class="num ">0.144</td><td class="num ">-1.621</td><td class="num ">0.105</td><td class="sig "></td><td class="num msd">4.14 (1.93)</td></tr>
+<tr><td class="ind2">  High × Nutrition Mid</td><td class="num">—</td><td class="num">—</td><td class="num ">0.285</td><td class="num ">0.216</td><td class="num ">1.321</td><td class="num ">0.186</td><td class="sig "></td><td class="num msd">3.84 (1.96)</td></tr>
+<tr><td class="ind2">  Mid × Nutrition High</td><td class="num">—</td><td class="num">—</td><td class="num ">0.233</td><td class="num ">0.159</td><td class="num ">1.465</td><td class="num ">0.143</td><td class="sig "></td><td class="num msd">4.80 (1.98)</td></tr>
+<tr><td class="ind2">  High × Nutrition High</td><td class="num">—</td><td class="num">—</td><td class="num sig5">0.409</td><td class="num sig5">0.160</td><td class="num sig5">2.550</td><td class="num sig5">0.011</td><td class="sig sig5">**</td><td class="num msd">4.56 (2.05)</td></tr>
+<tr class="fhdr"><td><b>Price × Taste Level</b></td><td class="num">4</td><td class="num sig1">6.60</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Mid × Taste Mid</td><td class="num">—</td><td class="num">—</td><td class="num ">0.241</td><td class="num ">0.268</td><td class="num ">0.899</td><td class="num ">0.368</td><td class="sig "></td><td class="num msd">4.15 (1.88)</td></tr>
+<tr><td class="ind2">  High × Taste Mid</td><td class="num">—</td><td class="num">—</td><td class="num sig1">-0.882</td><td class="num sig1">0.252</td><td class="num sig1">-3.501</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">3.57 (1.90)</td></tr>
+<tr><td class="ind2">  Mid × Taste High</td><td class="num">—</td><td class="num">—</td><td class="num sig5">0.584</td><td class="num sig5">0.234</td><td class="num sig5">2.497</td><td class="num sig5">0.013</td><td class="sig sig5">**</td><td class="num msd">5.04 (1.85)</td></tr>
+<tr><td class="ind2">  High × Taste High</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.277</td><td class="num ">0.218</td><td class="num ">-1.270</td><td class="num ">0.204</td><td class="sig "></td><td class="num msd">4.80 (1.95)</td></tr>
+<tr class="fhdr"><td><b>Price × Health &amp; Safety Label</b></td><td class="num">2</td><td class="num ">1.61</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num ">0.200</td><td class="sig "></td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Mid × Health Label</td><td class="num">—</td><td class="num">—</td><td class="num ">0.252</td><td class="num ">0.339</td><td class="num ">0.744</td><td class="num ">0.457</td><td class="sig "></td><td class="num msd">4.47 (1.95)</td></tr>
+<tr><td class="ind2">  High × Health Label</td><td class="num">—</td><td class="num">—</td><td class="num ">0.533</td><td class="num ">0.354</td><td class="num ">1.506</td><td class="num ">0.132</td><td class="sig "></td><td class="num msd">4.45 (1.99)</td></tr>
+<tr class="ix-sec"><td colspan="9"><b>3. Nutrition Level Interactions</b></td></tr>
+<tr class="fhdr"><td><b>Nutrition × Taste Level</b></td><td class="num">4</td><td class="num sig1">6.02</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num sig1"><.001</td><td class="sig sig1">***</td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Mid × Taste Mid</td><td class="num">—</td><td class="num">—</td><td class="num ">0.314</td><td class="num ">0.195</td><td class="num ">1.611</td><td class="num ">0.107</td><td class="sig "></td><td class="num msd">4.13 (1.88)</td></tr>
+<tr><td class="ind2">  High × Taste Mid</td><td class="num">—</td><td class="num">—</td><td class="num ">0.260</td><td class="num ">0.236</td><td class="num ">1.104</td><td class="num ">0.270</td><td class="sig "></td><td class="num msd">3.14 (1.95)</td></tr>
+<tr><td class="ind2">  Mid × Taste High</td><td class="num">—</td><td class="num">—</td><td class="num ">0.067</td><td class="num ">0.225</td><td class="num ">0.297</td><td class="num ">0.766</td><td class="sig "></td><td class="num msd">4.07 (2.11)</td></tr>
+<tr><td class="ind2">  High × Taste High</td><td class="num">—</td><td class="num">—</td><td class="num ">0.241</td><td class="num ">0.218</td><td class="num ">1.104</td><td class="num ">0.269</td><td class="sig "></td><td class="num msd">5.01 (1.86)</td></tr>
+<tr class="fhdr"><td><b>Nutrition × Health &amp; Safety Label</b></td><td class="num">2</td><td class="num ">1.62</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num ">0.199</td><td class="sig "></td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Mid × Health Label</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.067</td><td class="num ">0.198</td><td class="num ">-0.340</td><td class="num ">0.734</td><td class="sig "></td><td class="num msd">4.19 (1.94)</td></tr>
+<tr><td class="ind2">  High × Health Label</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.451</td><td class="num ">0.277</td><td class="num ">-1.626</td><td class="num ">0.104</td><td class="sig "></td><td class="num msd">4.67 (1.94)</td></tr>
+<tr class="ix-sec"><td colspan="9"><b>4. Taste Level Interactions</b></td></tr>
+<tr class="fhdr"><td><b>Taste × Health &amp; Safety Label</b></td><td class="num">2</td><td class="num ">0.53</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num ">0.591</td><td class="sig "></td><td class="num msd">—</td></tr>
+<tr><td class="ind2">  Mid × Health Label</td><td class="num">—</td><td class="num">—</td><td class="num ">0.257</td><td class="num ">0.410</td><td class="num ">0.626</td><td class="num ">0.531</td><td class="sig "></td><td class="num msd">4.11 (1.90)</td></tr>
+<tr><td class="ind2">  High × Health Label</td><td class="num">—</td><td class="num">—</td><td class="num ">-0.126</td><td class="num ">0.431</td><td class="num ">-0.292</td><td class="num ">0.770</td><td class="sig "></td><td class="num msd">4.86 (1.86)</td></tr>
+<tr class="footer"><td colspan="9"><i>N</i> = 1743 &nbsp;|&nbsp; <i>R</i>² = 0.157 &nbsp;|&nbsp; Ref: Basic, Low price/nutrition/taste, No health label</td></tr>
+  </tbody>
+</table>
+<div class="tnote">
+  <b>Note.</b> All interactions tested simultaneously with main effects in a single model.
+  Reference: Product = Basic, PriceLvl = Low, NutriLvl = Low, TasteLvl = Low, HealthLabel = No.
+</div>
+
+</body>
+</html>
