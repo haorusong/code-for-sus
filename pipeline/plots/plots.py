@@ -642,6 +642,477 @@ def plot_combined_level_counts(df: pd.DataFrame, outpath: str) -> None:
 
 
 # ---------------------------------------------------------------------
+# NEW: Moderation simple slopes plot (SustainScore × Product Type)
+# ---------------------------------------------------------------------
+def plot_moderation_simple_slopes(df: pd.DataFrame, outpath: str,
+                                   long_csv: str = "out/GLM_WTP__LongData.csv") -> None:
+    """
+    Simple slopes plot using Ordered Logit (OrderedModel) expected WTP values.
+    Groups participants into SustainScore terciles and plots model-based
+    expected WTP (E[Y] = Σ level × P(Y=level)) per group × product type.
+    Falls back to raw means if OrderedModel fitting fails.
+    """
+    apply_plot_style()
+
+    # ── Try OrderedModel on long data ─────────────────────────────────────
+    use_ordered = False
+    expected_vals = {}
+
+    try:
+        from statsmodels.miscmodels.ordinal_model import OrderedModel
+        from patsy import dmatrix
+
+        if not os.path.exists(long_csv):
+            raise FileNotFoundError(long_csv)
+
+        long = pd.read_csv(long_csv)
+        cont_cols = ["SustainScore", "PriceUSD", "LabPriceGap",
+                     "Age_num", "Education_num", "HouseholdSize_num", "Income_num"]
+        for c in cont_cols:
+            if c in long.columns:
+                long[c + "_c"] = long[c] - long[c].mean()
+
+        needed_l = ["WTP", "Product", "PriceLvl", "NutriLvl", "TasteLvl", "SustainScore_c"]
+        sub = long.dropna(subset=needed_l).copy()
+        sub["WTP"] = _as_numeric(sub["WTP"]).astype(int)
+        sub = sub[sub["WTP"].between(1, 7)]
+
+        formula_rhs = ("C(Product) + C(PriceLvl) + C(NutriLvl) + C(TasteLvl)"
+                       " + SustainScore_c + PriceUSD_c + LabPriceGap_c")
+        X = dmatrix(formula_rhs, data=sub, return_type="dataframe")
+        if "Intercept" in X.columns:
+            X = X.drop(columns=["Intercept"])
+
+        mod = OrderedModel(sub["WTP"].values, X.values, distr="logit")
+        res = mod.fit(method="bfgs", disp=False, maxiter=500)
+
+        # Predicted probabilities → expected WTP per observation
+        probs = res.predict()                       # (n, 7)
+        levels = np.arange(1, probs.shape[1] + 1)  # [1,2,...,7]
+        sub["E_WTP"] = probs @ levels
+
+        # Tercile groups on SustainScore_c
+        lo = sub["SustainScore_c"].quantile(0.33)
+        hi = sub["SustainScore_c"].quantile(0.67)
+
+        def _grp(s):
+            if s <= lo:  return "Low"
+            if s <= hi:  return "Medium"
+            return "High"
+
+        sub["SustainGroup"] = sub["SustainScore_c"].map(_grp)
+
+        for grp in ["Low", "Medium", "High"]:
+            for prod in ["Lab", "Premium", "Basic"]:
+                mask = (sub["SustainGroup"] == grp) & (sub["Product"] == prod)
+                vals = sub.loc[mask, "E_WTP"]
+                expected_vals[(grp, prod)] = (vals.mean(), vals.sem(), len(vals))
+
+        use_ordered = True
+
+    except Exception:
+        pass
+
+    # ── Fallback: raw means from wide df ──────────────────────────────────
+    if not use_ordered:
+        needed_w = ["SustainScore", COL_RATE_LAB, COL_RATE_PREM, COL_RATE_BASIC]
+        if not all(c in df.columns for c in needed_w):
+            return
+        work = df[needed_w].copy()
+        for c in [COL_RATE_LAB, COL_RATE_PREM, COL_RATE_BASIC]:
+            work[c] = _as_numeric(work[c])
+        work["SustainScore"] = _as_numeric(work["SustainScore"])
+        work = work.dropna()
+        lo = work["SustainScore"].quantile(0.33)
+        hi = work["SustainScore"].quantile(0.67)
+
+        def _grp(s):
+            if s <= lo:  return "Low"
+            if s <= hi:  return "Medium"
+            return "High"
+
+        work["SustainGroup"] = work["SustainScore"].map(_grp)
+        prod_col_map = {"Lab": COL_RATE_LAB, "Premium": COL_RATE_PREM, "Basic": COL_RATE_BASIC}
+        for grp in ["Low", "Medium", "High"]:
+            for prod, col in prod_col_map.items():
+                vals = work.loc[work["SustainGroup"] == grp, col]
+                expected_vals[(grp, prod)] = (vals.mean(), vals.sem(), len(vals))
+
+    # ── Plot ──────────────────────────────────────────────────────────────
+    products = [("Lab", "Lab-grown"), ("Premium", "Premium"), ("Basic", "Basic")]
+    groups   = ["Low", "Medium", "High"]
+    colors   = ["#e74c3c", "#f39c12", "#2ecc71"]
+
+    subtitle = "Ordered Logit Expected WTP" if use_ordered else "Raw Group Means"
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    ax.set_title(
+        f"Moderation Effect: Sustainability Orientation × Product Type\n"
+        f"({subtitle})",
+        pad=14
+    )
+
+    x = np.arange(len(products))
+    for grp, color in zip(groups, colors):
+        means = [expected_vals[(grp, p)][0] for p, _ in products]
+        sems  = [expected_vals[(grp, p)][1] for p, _ in products]
+        n_grp = expected_vals[(grp, products[0][0])][2]
+        ax.errorbar(
+            x, means, yerr=sems,
+            marker="o", linewidth=2.5, markersize=8,
+            label=f"{grp} Sustainability (n={n_grp})",
+            color=color, capsize=4,
+        )
+        for xi, (m, se) in zip(x, zip(means, sems)):
+            ax.text(xi, float(m) + float(se) + 0.10, f"{float(m):.2f}",
+                    ha="center", fontsize=10, color=color)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([lbl for _, lbl in products])
+    ax.set_ylabel("Expected WTP Rating (1–7)")
+    ax.set_ylim(1, 7.8)
+    ax.legend(frameon=False, loc="upper right", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=300)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------
+# NEW: Sustainability score distribution (histogram + KDE)
+# ---------------------------------------------------------------------
+def plot_sustainability_distribution(df: pd.DataFrame, outpath: str) -> None:
+    apply_plot_style()
+    if "SustainScore" not in df.columns:
+        return
+    scores = _as_numeric(df["SustainScore"]).dropna()
+    if len(scores) < 5:
+        return
+
+    from scipy.stats import gaussian_kde  # local import — scipy already a dep
+
+    fig, ax = plt.subplots(figsize=(8.5, 5.5))
+    ax.set_title("Distribution of Sustainability Orientation Score", pad=14)
+
+    ax.hist(scores, bins=20, density=True, alpha=0.55, color="#3498db",
+            edgecolor="white", label="Histogram")
+
+    kde = gaussian_kde(scores)
+    xs = np.linspace(scores.min(), scores.max(), 300)
+    ax.plot(xs, kde(xs), color="#2c3e50", linewidth=2.5, label="KDE")
+
+    mu, sd = float(scores.mean()), float(scores.std())
+    ax.axvline(mu, color="#e74c3c", linewidth=2,        label=f"Mean = {mu:.2f}")
+    ax.axvline(mu - sd, color="#e74c3c", linewidth=1.5, linestyle="--", alpha=0.7,
+               label=f"±1 SD  [{mu-sd:.2f}, {mu+sd:.2f}]")
+    ax.axvline(mu + sd, color="#e74c3c", linewidth=1.5, linestyle="--", alpha=0.7)
+
+    lo33 = float(scores.quantile(0.33))
+    hi67 = float(scores.quantile(0.67))
+    ax.axvspan(float(scores.min()), lo33, alpha=0.07, color="#e74c3c", label="Low tercile")
+    ax.axvspan(hi67, float(scores.max()), alpha=0.07, color="#2ecc71", label="High tercile")
+
+    ax.set_xlabel("Sustainability Orientation Score (1–7)")
+    ax.set_ylabel("Density")
+    ax.legend(frameon=False, fontsize=10)
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=300)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------
+# NEW: Demographics summary (Gender / Education / Income)
+# ---------------------------------------------------------------------
+def plot_demographics_summary(df: pd.DataFrame, outpath: str) -> None:
+    apply_plot_style()
+
+    GENDER_MAP  = {1: "Male", 2: "Female", 3: "Non-binary", 4: "Other"}
+    EDUC_MAP    = {1: "<High School", 2: "High School", 3: "Bachelor's",
+                   4: "Master's", 5: "Doctorate"}
+    INCOME_MAP  = {1: "<$10k", 2: "$10–25k", 3: "$25–50k", 4: "$50–75k",
+                   5: "$75–100k", 6: "$100–150k", 7: ">$150k"}
+
+    panels = [
+        ("Gender",    GENDER_MAP,  [1, 2, 3, 4]),
+        ("Education", EDUC_MAP,    [1, 2, 3, 4, 5]),
+        ("Income",    INCOME_MAP,  [1, 2, 3, 4, 5, 6, 7]),
+    ]
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5.5))
+    fig.suptitle("Sample Demographics (N = {})".format(len(df.dropna(subset=["Gender"], how="all"))),
+                 fontsize=20, y=1.02)
+
+    for ax, (col, mapping, order) in zip(axes, panels):
+        if col not in df.columns:
+            ax.text(0.5, 0.5, f"{col}\nnot found", ha="center", va="center",
+                    transform=ax.transAxes)
+            continue
+
+        ser = df[col].dropna()
+
+        def _decode(v):
+            try:
+                return mapping.get(int(float(v)), str(v))
+            except Exception:
+                return str(v)
+
+        decoded = ser.map(_decode)
+        label_order = [mapping[k] for k in order if k in mapping]
+        counts = decoded.value_counts()
+        counts = counts.reindex([l for l in label_order if l in counts.index]).fillna(0).astype(int)
+        total  = int(counts.sum())
+
+        bars = ax.bar(range(len(counts)), counts.values, color="#3498db", width=0.6)
+        ax.set_title(col, pad=10)
+        ax.set_xticks(range(len(counts)))
+        ax.set_xticklabels(counts.index.tolist(), rotation=35, ha="right", fontsize=10)
+        ax.set_ylabel("Participants")
+
+        dy = int(counts.max()) * 0.03 if len(counts) else 0.5
+        for b, v in zip(bars, counts.values):
+            pct = int(v) / total * 100 if total else 0
+            ax.text(b.get_x() + b.get_width() / 2,
+                    int(b.get_height()) + dy,
+                    f"{int(v)}\n({pct:.0f}%)",
+                    ha="center", va="bottom", fontsize=9)
+
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------
+# NEW: Health Label interaction plots
+# ---------------------------------------------------------------------
+def plot_healthlabel_interactions(df: pd.DataFrame, outpath: str) -> None:
+    """
+    Two-panel figure showing significant HealthLabel interactions:
+      Panel A: HealthLabel × Price (USD) — regression lines per group (formally sig. p=.007)
+      Panel B: Mean WTP by Product × HealthLabel — bar chart (descriptive, p=.138)
+    Only rendered if HealthLabel column is present with both values.
+    """
+    apply_plot_style()
+    if "HealthLabel" not in df.columns or df["HealthLabel"].nunique() < 2:
+        return
+
+    import statsmodels.formula.api as smf
+    from pipeline.models.analysis import _build_long_wtp
+    from pipeline.io import recode_to_parametric, add_sustain_score
+
+    df = recode_to_parametric(df.copy())
+    df = add_sustain_score(df)
+    long = _build_long_wtp(df)
+    long = long.dropna(subset=["Product", "PriceLvl", "NutriLvl", "TasteLvl"]).copy()
+    if long.empty or "PriceUSD" not in long.columns:
+        return
+
+    long["HealthLabel"] = pd.to_numeric(long["HealthLabel"], errors="coerce")
+    long = long.dropna(subset=["WTP", "PriceUSD", "HealthLabel"])
+
+    GROUP_LABELS = {0: "No Health Label\n(Sept 2025)", 1: "Health Label\n(April 2026)"}
+    COLORS       = {0: "#2166ac", 1: "#d6604d"}
+    MARKERS      = {0: "o", 1: "s"}
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
+    fig.suptitle("Health Label × Predictor Interactions", fontsize=13, fontweight="bold", y=1.01)
+
+    # ── Panel A: HealthLabel × Price (significant, p = .007) ──────────────
+    ax = axes[0]
+    price_vals = np.linspace(long["PriceUSD"].quantile(0.05),
+                             long["PriceUSD"].quantile(0.95), 80)
+
+    for hl in [0, 1]:
+        sub = long[long["HealthLabel"] == hl].copy()
+        if sub.empty:
+            continue
+        # Fit simple OLS within group for the regression line
+        try:
+            mdl = smf.ols("WTP ~ PriceUSD", data=sub).fit()
+            pred = mdl.params["Intercept"] + mdl.params["PriceUSD"] * price_vals
+            ci   = mdl.get_prediction(pd.DataFrame({"PriceUSD": price_vals})).conf_int()
+            ax.fill_between(price_vals, ci[:, 0], ci[:, 1],
+                            alpha=0.12, color=COLORS[hl])
+            ax.plot(price_vals, pred, color=COLORS[hl], lw=2.5,
+                    label=f"{GROUP_LABELS[hl]} (β={mdl.params['PriceUSD']:.3f})")
+        except Exception:
+            pass
+        # Scatter: mean WTP per price bin
+        sub["price_bin"] = pd.cut(sub["PriceUSD"], bins=6)
+        agg = sub.groupby("price_bin", observed=True)["WTP"].mean()
+        mids = [iv.mid for iv in agg.index]
+        ax.scatter(mids, agg.values, color=COLORS[hl], marker=MARKERS[hl],
+                   s=60, zorder=5, alpha=0.85)
+
+    ax.set_xlabel("Price (USD)", fontsize=11)
+    ax.set_ylabel("Mean WTP (1–7)", fontsize=11)
+    ax.set_title("Panel A: Health Label × Price\n(interaction β=+0.320, p=.007***)",
+                 fontsize=11, fontweight="bold")
+    ax.legend(fontsize=9, frameon=False)
+    ax.grid(True, alpha=0.25)
+    ax.annotate("↑ Label attenuates\nprice sensitivity",
+                xy=(long["PriceUSD"].max() * 0.72, 3.0),
+                fontsize=8.5, color="#d6604d", style="italic")
+
+    # ── Panel B: Mean WTP by Product × HealthLabel (descriptive) ──────────
+    ax = axes[1]
+    products = ["Basic", "Premium", "Lab"]
+    x      = np.arange(len(products))
+    width  = 0.35
+    means  = {}
+    sems   = {}
+    for hl in [0, 1]:
+        sub = long[long["HealthLabel"] == hl]
+        means[hl] = [sub[sub["Product"] == p]["WTP"].mean() for p in products]
+        sems[hl]  = [sub[sub["Product"] == p]["WTP"].sem()  for p in products]
+
+    for i, hl in enumerate([0, 1]):
+        offset = (i - 0.5) * width
+        bars = ax.bar(x + offset, means[hl], width,
+                      color=COLORS[hl], alpha=0.82,
+                      label=GROUP_LABELS[hl].replace("\n", " "),
+                      yerr=sems[hl], capsize=4, error_kw={"linewidth": 1.2})
+        for bar, m in zip(bars, means[hl]):
+            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.07,
+                    f"{m:.2f}", ha="center", va="bottom", fontsize=8)
+
+    # Annotate Lab difference
+    lab_idx = products.index("Lab")
+    delta = means[1][lab_idx] - means[0][lab_idx]
+    ax.annotate(f"Δ={delta:+.2f}",
+                xy=(x[lab_idx], max(means[0][lab_idx], means[1][lab_idx]) + 0.35),
+                ha="center", fontsize=9, color="#c0392b", fontweight="bold")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(products, fontsize=11)
+    ax.set_ylabel("Mean WTP (1–7)", fontsize=11)
+    ax.set_xlabel("Product Type", fontsize=11)
+    ax.set_title("Panel B: Health Label × Product\n(descriptive; β=+0.60, p=.138)",
+                 fontsize=11, fontweight="bold")
+    ax.legend(fontsize=9, frameon=False)
+    ax.set_ylim(0, max(max(means[0]), max(means[1])) + 0.8)
+    ax.grid(True, axis="y", alpha=0.25)
+
+    fig.tight_layout()
+    os.makedirs(os.path.dirname(outpath), exist_ok=True)
+    fig.savefig(outpath, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------
+# NEW: GLM coefficient forest plot (reads Model 1 Coefs CSV)
+# ---------------------------------------------------------------------
+def plot_glm_forest(coefs_csv: str, outpath: str) -> None:
+    """Forest plot of GLM Model 1 HC3 coefficients with 95% CI."""
+    import re
+    apply_plot_style()
+    if not os.path.exists(coefs_csv):
+        return
+
+    coefs = pd.read_csv(coefs_csv)
+    if coefs.empty or "term" not in coefs.columns:
+        return
+
+    LABEL_MAP = {
+        "Intercept":                    None,
+        # Product / scenario factors
+        "C(Product)[T.Lab]":            "Product: Lab-grown",
+        "C(Product)[T.Premium]":        "Product: Premium",
+        "C(PriceLvl)[T.Mid]":           "Price Level: Mid",
+        "C(PriceLvl)[T.High]":          "Price Level: High",
+        "C(NutriLvl)[T.Mid]":           "Nutrition Level: Mid",
+        "C(NutriLvl)[T.High]":          "Nutrition Level: High",
+        "C(TasteLvl)[T.Mid]":           "Taste Level: Mid",
+        "C(TasteLvl)[T.High]":          "Taste Level: High",
+        # Continuous predictors
+        "SustainScore_c":               "Sustainability Orientation",
+        "PriceUSD_c":                   "Price (USD)",
+        "LabPriceGap_c":                "Lab Price Gap",
+        "Age_num_c":                    "Age (continuous)",
+        "Education_num_c":              "Education (years)",
+        "HouseholdSize_num_c":          "Household Size",
+        "Income_num_c":                 "Income (continuous)",
+        # Gender (ref = Male = 1)
+        "C(Gender)[T.2.0]":             "Gender: Female",
+        "C(Gender)[T.3.0]":             "Gender: Non-binary",
+        "C(Gender)[T.4.0]":             "Gender: Prefer not to say",
+        # Marital Status (ref = Single = 1)
+        "C(Marital)[T.2.0]":            "Marital: Married",
+        "C(Marital)[T.3.0]":            "Marital: Divorced",
+        "C(Marital)[T.4.0]":            "Marital: Widowed",
+        "C(Marital)[T.5.0]":            "Marital: Other",
+        # Employment (ref = Employed full-time = 1)
+        "C(Employment)[T.2.0]":         "Employment: Part-time",
+        "C(Employment)[T.3.0]":         "Employment: Unemployed (seeking)",
+        "C(Employment)[T.4.0]":         "Employment: Unemployed (not seeking)",
+        "C(Employment)[T.5.0]":         "Employment: Retired",
+        "C(Employment)[T.6.0]":         "Employment: Student",
+        "C(Employment)[T.7.0]":         "Employment: Disabled",
+        # Urban/Rural (ref = Urban = 1)
+        "C(Urban_Rural)[T.2.0]":        "Living Area: Suburban",
+        "C(Urban_Rural)[T.3.0]":        "Living Area: Rural",
+    }
+
+    def _label(term):
+        if term in LABEL_MAP:
+            return LABEL_MAP[term]
+        # Fallback: try without .0 suffix (e.g. T.2 instead of T.2.0)
+        term_norm = re.sub(r"\[T\.(\d+)\.0\]", r"[T.\1.0]", term)
+        if term_norm in LABEL_MAP:
+            return LABEL_MAP[term_norm]
+        m = re.match(r"C\((\w+)\)\[T\.(.+)\]", term)
+        if m:
+            return f"{m.group(1)}: {m.group(2)}"
+        return term
+
+    rows = []
+    for _, r in coefs.iterrows():
+        lbl = _label(str(r["term"]))
+        if lbl is None:
+            continue
+        try:
+            rows.append({"label": lbl, "coef": float(r["coef"]),
+                         "se": float(r["std_err"]), "p": float(r["p"])})
+        except Exception:
+            continue
+
+    if not rows:
+        return
+
+    plot_df = pd.DataFrame(rows).sort_values("coef").reset_index(drop=True)
+    ci = 1.96 * plot_df["se"]
+
+    def _color(p):
+        if p < 0.01:  return "#e74c3c"
+        if p < 0.05:  return "#e67e22"
+        if p < 0.10:  return "#f1c40f"
+        return "#95a5a6"
+
+    colors = [_color(p) for p in plot_df["p"]]
+
+    fig, ax = plt.subplots(figsize=(10, max(6, len(plot_df) * 0.42)))
+    ax.set_title("GLM Model 1 — Coefficient Plot (95% CI, HC3 Robust SE)", pad=14)
+
+    y = np.arange(len(plot_df))
+    ax.barh(y, plot_df["coef"], xerr=ci, align="center",
+            color=colors, height=0.6, ecolor="#555", capsize=3)
+    ax.axvline(0, color="black", linewidth=1)
+    ax.set_yticks(y)
+    ax.set_yticklabels(plot_df["label"], fontsize=11)
+    ax.set_xlabel("Coefficient (β) with 95% CI")
+
+    from matplotlib.patches import Patch
+    legend_els = [
+        Patch(color="#e74c3c", label="p < .01 ***"),
+        Patch(color="#e67e22", label="p < .05 **"),
+        Patch(color="#f1c40f", label="p < .10 *"),
+        Patch(color="#95a5a6", label="ns"),
+    ]
+    ax.legend(handles=legend_els, frameon=False, loc="lower right", fontsize=10)
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------
 # Orchestrator (backward compatible)
 # ---------------------------------------------------------------------
 def plot_everything(
@@ -721,5 +1192,24 @@ def plot_everything(
     fp = os.path.join(out_dir, "fig_age_distribution.png")
     plot_age_distribution(df, fp, age_col="Age")
     out["fig_age_distribution"] = fp
+
+    # New paper figures
+    fp = os.path.join(out_dir, "fig_moderation_simple_slopes.png")
+    plot_moderation_simple_slopes(df, fp)
+    out["fig_moderation_simple_slopes"] = fp
+
+    fp = os.path.join(out_dir, "fig_sustainability_distribution.png")
+    plot_sustainability_distribution(df, fp)
+    out["fig_sustainability_distribution"] = fp
+
+    fp = os.path.join(out_dir, "fig_demographics_summary.png")
+    plot_demographics_summary(df, fp)
+    out["fig_demographics_summary"] = fp
+
+    # Health label interactions (only rendered if HealthLabel column present)
+    if "HealthLabel" in df.columns and df["HealthLabel"].nunique() >= 2:
+        fp = os.path.join(out_dir, "fig_healthlabel_interactions.png")
+        plot_healthlabel_interactions(df, fp)
+        out["fig_healthlabel_interactions"] = fp
 
     return out
