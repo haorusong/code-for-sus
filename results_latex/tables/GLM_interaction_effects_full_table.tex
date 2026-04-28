@@ -1,0 +1,102 @@
+\begin{center}
+\begin{longtable}{lcccc}
+\caption{GLM Interaction Effects --- Full Pairwise Cross-Comparison ($N=1743$). All $\binom{8}{2} = 28$ pairwise interactions among the eight main-effect-significant variables (Product, Nutrition, Taste, Health Label, Attitude, Behavior, Price USD, Education). Stars flag rows reaching $p<.10$.}\label{tab:glm_interactions_full} \\
+\toprule
+Predictor & $\beta\ (SE)$ & $t$ & $p$ & Sig. \\
+\midrule
+\endfirsthead
+\multicolumn{5}{l}{\textit{Table~\ref{tab:glm_interactions_full} continued from previous page.}} \\
+\toprule
+Predictor & $\beta\ (SE)$ & $t$ & $p$ & Sig. \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\textit{Continued on next page\ldots}} \\
+\endfoot
+\multicolumn{5}{l}{$\Delta R^2 = 0.059$,\quad $F$\text{-change}$(37,\ 1674) = 3.37$,\quad $p < .001$} \\
+\multicolumn{5}{l}{Model 2: $R^2 = 0.205$,\quad Adj.\ $R^2 = 0.173$} \\
+\bottomrule
+\multicolumn{5}{p{0.95\linewidth}}{\footnotesize \textit{Note.} Full pairwise cross-comparison: all 28 interaction groups, 52 estimated coefficients in total; 7 reached $p<.10$ (see Table~\ref{tab:glm_interactions} in the main text for the significant subset). $\beta$/SE/$t$/$p$ from OLS with HC3 robust SE. All continuous predictors mean-centred (Jaccard \& Turrisi, 2003). $N=1743$ observations (581 participants $\times$ 3 products). Significance: *** $p<.01$, ** $p<.05$, * $p<.10$.}} \\
+\endlastfoot
+\quad \textbf{Product Type $\times$ Nutrition Level} (ref: Basic $\times$ Low) & & & & \\
+\qquad Lab $\times$ Mid & -0.069 (0.171) & -0.404 & 0.686 &  \\
+\qquad Lab $\times$ High & 0.458 (0.133) & 3.459 & $<$.001 & *** \\
+\qquad Premium $\times$ Mid & -0.000 (0.000) & -0.915 & 0.360 &  \\
+\qquad Premium $\times$ High & 0.575 (0.094) & 6.084 & $<$.001 & *** \\
+\quad \textbf{Product Type $\times$ Taste Level} (ref: Basic $\times$ Low) & & & & \\
+\qquad Lab $\times$ Mid & -0.858 (0.257) & -3.337 & $<$.001 & *** \\
+\qquad Lab $\times$ High & -0.056 (0.204) & -0.276 & 0.782 &  \\
+\qquad Premium $\times$ Mid & 0.000 (0.000) & 0.063 & 0.949 &  \\
+\qquad Premium $\times$ High & 0.575 (0.094) & 6.084 & $<$.001 & *** \\
+\quad \textbf{Product Type $\times$ Health \& Safety Label} (ref: Basic $\times$ No) & & & & \\
+\qquad Lab $\times$ Yes & -0.264 (0.965) & -0.273 & 0.785 &  \\
+\qquad Premium $\times$ Yes & 0.203 (1.098) & 0.185 & 0.853 &  \\
+\quad \textbf{Product Type $\times$ Attitude Score} (ref: Basic) & & & & \\
+\qquad Lab $\times$ Attitude & 0.599 (0.177) & 3.378 & $<$.001 & *** \\
+\qquad Premium $\times$ Attitude & 0.192 (0.286) & 0.672 & 0.502 &  \\
+\quad \textbf{Product Type $\times$ Behavior Score} (ref: Basic) & & & & \\
+\qquad Lab $\times$ Behavior & -0.051 (0.182) & -0.282 & 0.778 &  \\
+\qquad Premium $\times$ Behavior & -0.048 (0.295) & -0.163 & 0.871 &  \\
+\quad \textbf{Product Type $\times$ Price (USD)} (ref: Basic) & & & & \\
+\qquad Lab $\times$ PriceUSD & -0.271 (0.338) & -0.801 & 0.423 &  \\
+\qquad Premium $\times$ PriceUSD & 0.062 (0.390) & 0.159 & 0.874 &  \\
+\quad \textbf{Product Type $\times$ Education} (ref: Basic) & & & & \\
+\qquad Lab $\times$ Education & 0.220 (0.081) & 2.723 & 0.006 & *** \\
+\qquad Premium $\times$ Education & 0.099 (0.130) & 0.763 & 0.446 &  \\
+\quad \textbf{Nutrition Level $\times$ Taste Level} (ref: Low $\times$ Low) & & & & \\
+\qquad Mid $\times$ Mid & 0.283 (0.213) & 1.329 & 0.184 &  \\
+\qquad High $\times$ Mid & 0.178 (0.235) & 0.756 & 0.450 &  \\
+\qquad Mid $\times$ High & 0.209 (0.241) & 0.868 & 0.385 &  \\
+\qquad High $\times$ High & 0.309 (0.224) & 1.384 & 0.166 &  \\
+\quad \textbf{Nutrition Level $\times$ Health \& Safety Label} (ref: Low $\times$ No) & & & & \\
+\qquad Mid $\times$ Yes & 0.393 (0.362) & 1.086 & 0.277 &  \\
+\qquad High $\times$ Yes & -0.406 (0.457) & -0.889 & 0.374 &  \\
+\quad \textbf{Nutrition Level $\times$ Attitude Score} (ref: Low) & & & & \\
+\qquad Mid $\times$ Attitude & -0.068 (0.085) & -0.797 & 0.425 &  \\
+\qquad High $\times$ Attitude & -0.005 (0.126) & -0.038 & 0.970 &  \\
+\quad \textbf{Nutrition Level $\times$ Behavior Score} (ref: Low) & & & & \\
+\qquad Mid $\times$ Behavior & 0.092 (0.092) & 1.000 & 0.317 &  \\
+\qquad High $\times$ Behavior & -0.014 (0.132) & -0.106 & 0.916 &  \\
+\quad \textbf{Nutrition Level $\times$ Price (USD)} (ref: Low) & & & & \\
+\qquad Mid $\times$ PriceUSD & 0.030 (0.114) & 0.262 & 0.793 &  \\
+\qquad High $\times$ PriceUSD & -0.117 (0.137) & -0.853 & 0.394 &  \\
+\quad \textbf{Nutrition Level $\times$ Education} (ref: Low) & & & & \\
+\qquad Mid $\times$ Education & -0.002 (0.039) & -0.053 & 0.958 &  \\
+\qquad High $\times$ Education & -0.033 (0.058) & -0.563 & 0.574 &  \\
+\quad \textbf{Taste Level $\times$ Health \& Safety Label} (ref: Low $\times$ No) & & & & \\
+\qquad Mid $\times$ Yes & -0.282 (0.654) & -0.431 & 0.666 &  \\
+\qquad High $\times$ Yes & -0.657 (0.631) & -1.042 & 0.298 &  \\
+\quad \textbf{Taste Level $\times$ Attitude Score} (ref: Low) & & & & \\
+\qquad Mid $\times$ Attitude & 0.040 (0.182) & 0.218 & 0.828 &  \\
+\qquad High $\times$ Attitude & 0.019 (0.207) & 0.093 & 0.926 &  \\
+\quad \textbf{Taste Level $\times$ Behavior Score} (ref: Low) & & & & \\
+\qquad Mid $\times$ Behavior & -0.156 (0.202) & -0.773 & 0.440 &  \\
+\qquad High $\times$ Behavior & 0.045 (0.216) & 0.208 & 0.836 &  \\
+\quad \textbf{Taste Level $\times$ Price (USD)} (ref: Low) & & & & \\
+\qquad Mid $\times$ PriceUSD & -0.182 (0.175) & -1.041 & 0.298 &  \\
+\qquad High $\times$ PriceUSD & -0.232 (0.172) & -1.348 & 0.178 &  \\
+\quad \textbf{Taste Level $\times$ Education} (ref: Low) & & & & \\
+\qquad Mid $\times$ Education & -0.015 (0.087) & -0.173 & 0.863 &  \\
+\qquad High $\times$ Education & 0.023 (0.093) & 0.248 & 0.804 &  \\
+\quad \textbf{Health \& Safety Label $\times$ Attitude Score} (ref: No) & & & & \\
+\qquad Yes $\times$ Attitude & -0.095 (0.149) & -0.634 & 0.526 &  \\
+\quad \textbf{Health \& Safety Label $\times$ Behavior Score} (ref: No) & & & & \\
+\qquad Yes $\times$ Behavior & 0.117 (0.146) & 0.806 & 0.421 &  \\
+\quad \textbf{Health \& Safety Label $\times$ Price (USD)} (ref: No) & & & & \\
+\qquad Yes $\times$ PriceUSD & 0.320 (0.153) & 2.086 & 0.037 & ** \\
+\quad \textbf{Health \& Safety Label $\times$ Education} (ref: No) & & & & \\
+\qquad Yes $\times$ Education & -0.042 (0.061) & -0.679 & 0.497 &  \\
+\quad \textbf{Attitude Score $\times$ Behavior Score} () & & & & \\
+\qquad Attitude $\times$ Behavior & -0.011 (0.030) & -0.372 & 0.710 &  \\
+\quad \textbf{Attitude Score $\times$ Price (USD)} () & & & & \\
+\qquad Attitude $\times$ PriceUSD & 0.011 (0.054) & 0.195 & 0.845 &  \\
+\quad \textbf{Attitude Score $\times$ Education} () & & & & \\
+\qquad Attitude $\times$ Education & -0.001 (0.018) & -0.040 & 0.968 &  \\
+\quad \textbf{Behavior Score $\times$ Price (USD)} () & & & & \\
+\qquad Behavior $\times$ PriceUSD & 0.036 (0.055) & 0.660 & 0.509 &  \\
+\quad \textbf{Behavior Score $\times$ Education} () & & & & \\
+\qquad Behavior $\times$ Education & -0.010 (0.016) & -0.634 & 0.526 &  \\
+\quad \textbf{Price (USD) $\times$ Education} () & & & & \\
+\qquad PriceUSD $\times$ Education & -0.028 (0.023) & -1.178 & 0.239 &  \\
+\end{longtable}
+\end{center}

@@ -37,8 +37,8 @@ from statsmodels.multivariate.manova import MANOVA
 # Files + core settings
 # -------------------------
 
-DATA_FILE = r"F:\downloads\Exploring Consumer Preferences and Willingness to Pay for Sustainable and Lab-Grown Tuna -B_April 6, 2026_13.06.csv"
-OLD_DATA_FILE = r"C:\Users\XOS\Desktop\勾八人\code-for-sus\data\raw\Exploring Consumer Preferences and Willingness to Pay for Sustainable and Lab-Grown Tuna_September 2, 2025_15.40 2 copy.xlsx"
+DATA_FILE = "data/raw/tuna_april_2026.csv"
+OLD_DATA_FILE = "data/raw/Exploring Consumer Preferences and Willingness to Pay for Sustainable and Lab-Grown Tuna_September 2, 2025_15.40 2 copy.xlsx"
 
 SCENARIO_BOOK = "data/raw/scenario book.xlsx"
 DEMO_CODEBOOK = "data/raw/Demographic_Codebook.xlsx"
@@ -87,8 +87,11 @@ COL_SUST_LVL   = "SustainLvl"
 DEMOG_COLS = ["Age", "Gender", "Education", "Marital", "HouseholdSize", "Income", "Employment", "Urban_Rural"]
 
 # Qualtrics items (only if COMPUTE_SCORES=True)
-ATT_ITEMS  = ["Q2_1","Q3_1","Q4_1","Q5_1","Q6_1"]
-BEH_ITEMS  = ["Q8_1","Q9_1","Q10_1","Q11_1","Q12_1","Q13_1","Q14_1"]
+# NOTE: labels swapped to match actual question content. Q8-Q14 are value/belief
+# statements ("I value X", "I support X", "Pollution is...") = Attitude.
+# Q2-Q6 are self-reported actions ("I purchase X", "I contribute X") = Behavior.
+ATT_ITEMS  = ["Q8_1","Q9_1","Q10_1","Q11_1","Q12_1","Q13_1","Q14_1"]   # 7 attitude items
+BEH_ITEMS  = ["Q2_1","Q3_1","Q4_1","Q5_1","Q6_1"]                      # 5 behavior items
 ECON_ITEMS = ["Q15_1","Q16_1","Q17_1","Q18_1","Q19_1","Q20_1"]
 
 # Parametric demographic recoding maps (ordinal → numeric)
@@ -96,6 +99,32 @@ EDUCATION_YEARS    = {1: 10, 2: 12, 3: 16, 4: 18, 5: 22}
 AGE_MIDPOINTS      = {1: 21, 2: 29, 3: 39, 4: 49, 5: 59, 6: 69, 7: 80}
 HOUSEHOLD_SIZE_NUM = {1: 1,  2: 2,  3: 3,  4: 4,  5: 5}
 INCOME_MIDPOINTS   = {1: 5,  2: 17, 3: 37, 4: 62, 5: 87, 6: 125, 7: 175}
+
+# ------------------------------------------------------------------
+# USD price maps per Qualtrics Q-block (6 scenarios per block)
+# Format: (q_start, q_end) : {"Basic": $, "Premium": $, "Lab": $}
+# ------------------------------------------------------------------
+
+# Sept 2025 initial survey (NO health label, original coding)
+USD_MAP_OLD = {
+    (42, 47): {"Basic": 4.0, "Premium": 6.5, "Lab": 7.5},
+    (48, 53): {"Basic": 5.0, "Premium": 5.0, "Lab": 6.5},
+    (54, 59): {"Basic": 4.5, "Premium": 6.5, "Lab": 6.5},
+    (60, 65): {"Basic": 4.2, "Premium": 7.0, "Lab": 6.0},
+    (66, 71): {"Basic": 5.5, "Premium": 5.5, "Lab": 4.5},
+}
+
+# April 2026 revised survey (WITH health label, Basic/Premium fixed, Lab varies only).
+# Correction over old coding: old Q48-53 and Q66-71 blocks had ordering bugs;
+# new design keeps Basic at $2.50 and Premium at $4.50, and varies only Lab
+# from $5.50 (premium) down to $1.50 (below-Basic) across 5 blocks.
+USD_MAP_NEW = {
+    (42, 47): {"Basic": 2.5, "Premium": 4.5, "Lab": 5.5},   # Lab > Premium > Basic
+    (48, 53): {"Basic": 2.5, "Premium": 4.5, "Lab": 2.5},   # Lab = Basic  (Premium highest)
+    (54, 59): {"Basic": 2.5, "Premium": 4.5, "Lab": 4.5},   # Lab = Premium
+    (60, 65): {"Basic": 2.5, "Premium": 4.5, "Lab": 3.5},   # Basic < Lab < Premium
+    (66, 71): {"Basic": 2.5, "Premium": 4.5, "Lab": 1.5},   # Lab cheapest (below Basic)
+}
 
 # -------------------------
 # Utilities

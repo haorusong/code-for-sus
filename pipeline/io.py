@@ -379,7 +379,7 @@ def add_numeric_level_cols(df):
 
 def load_data_from_qualtrics_csv(path, scenario_book_path=SCENARIO_BOOK):
     """
-    Load a raw Qualtrics CSV export (new survey format).
+    Load a raw Qualtrics CSV export (April 2026 revised survey with health label).
 
     Qualtrics exports 3 header rows:
       row 0 = column header names  (kept as df.columns)
@@ -389,20 +389,10 @@ def load_data_from_qualtrics_csv(path, scenario_book_path=SCENARIO_BOOK):
     Each respondent saw exactly ONE scenario block (Q42–Q71).
     Scenario n maps to Q(41+n): Q42→1, Q43→2, …, Q71→30.
 
-    USD prices by Q-range (from original study design):
-      Q42-47 : Basic $4.00, Premium $6.50, Lab $7.50
-      Q48-53 : Basic $5.00, Premium $5.00, Lab $6.50
-      Q54-59 : Basic $4.50, Premium $6.50, Lab $6.50
-      Q60-65 : Basic $4.20, Premium $7.00, Lab $6.00
-      Q66-71 : Basic $5.50, Premium $5.50, Lab $4.50
+    USD prices by Q-range (April 2026 revised coding — see config.constants.USD_MAP_NEW).
+    Basic fixed at $2.50, Premium fixed at $4.50; Lab varies $5.50 → $1.50 across blocks.
     """
-    USD_MAP = {
-        (42, 47): {"Basic": 4.0,  "Premium": 6.5, "Lab": 7.5},
-        (48, 53): {"Basic": 5.0,  "Premium": 5.0, "Lab": 6.5},
-        (54, 59): {"Basic": 4.5,  "Premium": 6.5, "Lab": 6.5},
-        (60, 65): {"Basic": 4.2,  "Premium": 7.0, "Lab": 6.0},
-        (66, 71): {"Basic": 5.5,  "Premium": 5.5, "Lab": 4.5},
-    }
+    from config.constants import USD_MAP_NEW as USD_MAP
 
     def _get_usd(q, product):
         for (a, b), m in USD_MAP.items():
@@ -501,17 +491,9 @@ def load_old_xlsx_as_long(path=None, scenario_book_path=SCENARIO_BOOK):
       row 1  = label text  → skip
       rows 2+ = data
     """
-    from config.constants import OLD_DATA_FILE
+    from config.constants import OLD_DATA_FILE, USD_MAP_OLD as USD_MAP
     if path is None:
         path = OLD_DATA_FILE
-
-    USD_MAP = {
-        (42, 47): {"Basic": 4.0,  "Premium": 6.5, "Lab": 7.5},
-        (48, 53): {"Basic": 5.0,  "Premium": 5.0, "Lab": 6.5},
-        (54, 59): {"Basic": 4.5,  "Premium": 6.5, "Lab": 6.5},
-        (60, 65): {"Basic": 4.2,  "Premium": 7.0, "Lab": 6.0},
-        (66, 71): {"Basic": 5.5,  "Premium": 5.5, "Lab": 4.5},
-    }
 
     def _get_usd(q, product):
         for (a, b), m in USD_MAP.items():

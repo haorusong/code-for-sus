@@ -10,16 +10,20 @@ sys.stdout.reconfigure(encoding="utf-8")
 import pandas as pd
 import numpy as np
 
-PROLIFIC_CSV = r"F:\xwechat_files\wxid_4tn29ju2hbg312_1325\msg\file\2026-04\prolific_demographic_export_69b18f4a4423342a4223d951 (2).csv"
-LONG_CSV     = "out/GLM_WTP__LongData.csv"
-TEX_OUT      = "out/demographics_table.tex"
+PROLIFIC_V1 = "data/raw/prolific_V1_demo.csv"
+PROLIFIC_V2 = "data/raw/prolific_V2_demo.csv"
+LONG_CSV    = "out/GLM_WTP__LongData.csv"
+TEX_OUT     = "out/demographics_table.tex"
 
 # ── Load ───────────────────────────────────────────────────────────────────────
 long  = pd.read_csv(LONG_CSV)
 wide  = long.drop_duplicates(subset=["ParticipantID"]).copy()
 N     = len(wide)
 
-prolific   = pd.read_csv(PROLIFIC_CSV)
+# Pool both Prolific CSVs → race/ethnicity
+prol_v1 = pd.read_csv(PROLIFIC_V1)
+prol_v2 = pd.read_csv(PROLIFIC_V2)
+prolific = pd.concat([prol_v1, prol_v2], ignore_index=True)
 approved   = prolific[prolific["Status"] == "APPROVED"]
 N_prol     = len(approved)
 eth_counts = approved["Ethnicity simplified"].value_counts()
@@ -92,24 +96,22 @@ for sec_label, rows in SECTIONS:
         lines.append(data_row(lbl, n, pct))
     lines.append(r"\addlinespace[2pt]")
 
-# Continuous variables block
-sustain_m  = wide["SustainScore"].mean()
-sustain_sd = wide["SustainScore"].std()
+# Continuous-variable means (for reporting in Sample Characteristics prose,
+# not in the table — the Continuous Variables block was removed to keep the
+# demographics table on a single page).
 age_m      = wide["Age_num"].mean()
 age_sd     = wide["Age_num"].std()
-
-cont_block = "\n".join([
-    r"\midrule",
-    r"\multicolumn{3}{l}{\textbf{Continuous Variables}} \\",
-    rf"\quad Age (midpoint, years) & \multicolumn{{2}}{{l}}{{$M = {age_m:.1f}$, $SD = {age_sd:.1f}$}} \\",
-    rf"\quad Sustainability Orientation (1--7) & \multicolumn{{2}}{{l}}{{$M = {sustain_m:.2f}$, $SD = {sustain_sd:.2f}$}} \\",
-])
+att_m      = wide["AttScore"].mean()
+att_sd     = wide["AttScore"].std()
+beh_m      = wide["BehScore"].mean()
+beh_sd     = wide["BehScore"].std()
 
 # ── Assemble ───────────────────────────────────────────────────────────────────
 tex = "\n".join([
-    r"\begin{table}[ht]",
+    r"\begin{table}[H]",
     r"\centering",
-    rf"\caption{{Sample Characteristics ($N = {N}$)}}",
+    r"\small",
+    rf"\caption{{Sample Characteristics (Merged Sept~2025 + April~2026, $N = {N}$)}}",
     r"\label{tab:sample_demographics}",
     r"\begin{threeparttable}",
     r"\begin{tabular}{lrr}",
@@ -117,13 +119,12 @@ tex = "\n".join([
     rf"Characteristic & $n$ & \% \\",
     r"\midrule",
     "\n".join(lines),
-    cont_block,
     r"\bottomrule",
     r"\end{tabular}",
     r"\begin{tablenotes}\footnotesize",
-    rf"\item $^{{a}}$ Race/Ethnicity based on Prolific demographic export ($n = {N_prol}$ approved participants).",
+    rf"\item $^{{a}}$ Race/Ethnicity based on pooled Prolific demographic exports ($n = {N_prol}$ approved participants across both waves).",
     r"\item Percentages for all other variables based on survey respondents with valid scenario data.",
-    r"\item Sustainability Orientation Score = mean of 12 attitude and behavior items (Cronbach's $\alpha = .91$).",
+    rf"\item Continuous variables (reported in text): Age $M={age_m:.1f}$ ($SD={age_sd:.1f}$); Sustainability Attitude $M={att_m:.2f}$ ($SD={att_sd:.2f}$, $\alpha=.918$); Sustainability Behavior $M={beh_m:.2f}$ ($SD={beh_sd:.2f}$, $\alpha=.848$).",
     r"\end{tablenotes}",
     r"\end{threeparttable}",
     r"\end{table}",
@@ -132,4 +133,8 @@ tex = "\n".join([
 os.makedirs("out", exist_ok=True)
 with open(TEX_OUT, "w", encoding="utf-8") as f:
     f.write(tex)
-print(f"Written: {TEX_OUT}")
+print(f"Written: {TEX_OUT}  (N={N} survey participants, Prolific approved N={N_prol})")
+print(f"Continuous stats for Sample Characteristics prose:")
+print(f"  Age:       M={age_m:.1f}, SD={age_sd:.1f}")
+print(f"  Attitude:  M={att_m:.2f}, SD={att_sd:.2f}")
+print(f"  Behavior:  M={beh_m:.2f}, SD={beh_sd:.2f}")

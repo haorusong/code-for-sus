@@ -1436,7 +1436,7 @@ def glm_wtp_models(df):
         return {"Notes": pd.DataFrame({"note": ["No rows with complete Product/Price/Nutrition/Taste."]})}
 
     # --- Mean-centre continuous predictors ---
-    cont_cols = ["SustainScore", "PriceUSD", "LabPriceGap",
+    cont_cols = ["AttScore", "BehScore", "SustainScore", "PriceUSD", "LabPriceGap",
                  "Age_num", "Education_num", "HouseholdSize_num", "Income_num"]
     for c in cont_cols:
         if c in sub.columns:
@@ -1453,21 +1453,55 @@ def glm_wtp_models(df):
     if "HealthLabel" in sub.columns and sub["HealthLabel"].dropna().nunique() >= 2:
         health_terms = ["C(HealthLabel)"]
 
-    # --- Model 1: main effects ---
-    m1_cont  = ["SustainScore_c", "PriceUSD_c", "LabPriceGap_c",
+    # --- Model 1: main effects (Attitude and Behavior scores entered separately) ---
+    m1_cont  = ["AttScore_c", "BehScore_c", "PriceUSD_c", "LabPriceGap_c",
                 "Age_num_c", "Education_num_c", "HouseholdSize_num_c", "Income_num_c"]
     m1_cat   = ["C(Product)", "C(PriceLvl)", "C(NutriLvl)", "C(TasteLvl)"] + health_terms + [f"C({d})" for d in cat_demos]
     formula1 = "WTP ~ " + " + ".join(m1_cat + m1_cont)
 
-    # --- Model 2: + key interactions ---
+    # --- Model 2: pairwise interactions among only the variables that are
+    # significant as main effects in Model 1: Product, NutriLvl, TasteLvl,
+    # HealthLabel, AttScore, BehScore, PriceUSD, Education_num.
+    # PriceLvl (omnibus F=0.30, ns) and LabPriceGap (ns) are excluded from
+    # interactions to avoid collinearity contamination of the surviving
+    # variables. C(8,2) = 28 pairwise interaction blocks.
     interactions = [
-        "SustainScore_c:C(Product)",
-        "SustainScore_c:C(PriceLvl)",
-        "SustainScore_c:C(NutriLvl)",
-        "LabPriceGap_c:C(Product)",
-        "PriceUSD_c:C(Product)",
-        "C(PriceLvl):C(NutriLvl)",
+        # Product Type × {Nutri, Taste, Att, Beh, PriceUSD, Edu}
+        "C(Product):C(NutriLvl)",
+        "C(Product):C(TasteLvl)",
+        "C(Product):AttScore_c",
+        "C(Product):BehScore_c",
+        "C(Product):PriceUSD_c",
+        "C(Product):Education_num_c",
+        # Nutrition × {Taste, Att, Beh, PriceUSD, Edu}
+        "C(NutriLvl):C(TasteLvl)",
+        "C(NutriLvl):AttScore_c",
+        "C(NutriLvl):BehScore_c",
+        "C(NutriLvl):PriceUSD_c",
+        "C(NutriLvl):Education_num_c",
+        # Taste × {Att, Beh, PriceUSD, Edu}
+        "C(TasteLvl):AttScore_c",
+        "C(TasteLvl):BehScore_c",
+        "C(TasteLvl):PriceUSD_c",
+        "C(TasteLvl):Education_num_c",
+        # Continuous × continuous among {Att, Beh, PriceUSD, Edu}
+        "AttScore_c:BehScore_c",
+        "AttScore_c:PriceUSD_c",
+        "AttScore_c:Education_num_c",
+        "BehScore_c:PriceUSD_c",
+        "BehScore_c:Education_num_c",
+        "PriceUSD_c:Education_num_c",
     ]
+    if health_terms:
+        interactions += [
+            "C(Product):C(HealthLabel)",
+            "C(NutriLvl):C(HealthLabel)",
+            "C(TasteLvl):C(HealthLabel)",
+            "C(HealthLabel):AttScore_c",
+            "C(HealthLabel):BehScore_c",
+            "C(HealthLabel):PriceUSD_c",
+            "C(HealthLabel):Education_num_c",
+        ]
     formula2 = formula1 + " + " + " + ".join(interactions)
 
     out = {}
@@ -1569,7 +1603,7 @@ def ordered_model_sensitivity(df):
         return {"OM_Notes": pd.DataFrame({"note": ["No rows with complete Product/Price/Nutrition/Taste."]})}
 
     # Mean-centre continuous predictors (same as glm_wtp_models)
-    cont_cols = ["SustainScore", "PriceUSD", "LabPriceGap",
+    cont_cols = ["AttScore", "BehScore", "SustainScore", "PriceUSD", "LabPriceGap",
                  "Age_num", "Education_num", "HouseholdSize_num", "Income_num"]
     for c in cont_cols:
         if c in sub.columns:
@@ -1580,15 +1614,18 @@ def ordered_model_sensitivity(df):
     cat_demos = [d for d in ["Gender", "Marital", "Employment", "Urban_Rural"]
                  if d in sub.columns and sub[d].dropna().astype(str).nunique() >= 2]
 
-    m1_cont = ["SustainScore_c", "PriceUSD_c", "LabPriceGap_c",
+    m1_cont = ["AttScore_c", "BehScore_c", "PriceUSD_c", "LabPriceGap_c",
                "Age_num_c", "Education_num_c", "HouseholdSize_num_c", "Income_num_c"]
     m1_cat  = ["C(Product)", "C(PriceLvl)", "C(NutriLvl)", "C(TasteLvl)"] + [f"C({d})" for d in cat_demos]
     formula1 = " + ".join(m1_cat + m1_cont)
 
     interactions = [
-        "SustainScore_c:C(Product)",
-        "SustainScore_c:C(PriceLvl)",
-        "SustainScore_c:C(NutriLvl)",
+        "AttScore_c:C(Product)",
+        "AttScore_c:C(PriceLvl)",
+        "AttScore_c:C(NutriLvl)",
+        "BehScore_c:C(Product)",
+        "BehScore_c:C(PriceLvl)",
+        "BehScore_c:C(NutriLvl)",
         "LabPriceGap_c:C(Product)",
         "PriceUSD_c:C(Product)",
         "C(PriceLvl):C(NutriLvl)",

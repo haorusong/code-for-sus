@@ -1,0 +1,30 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor state
+.vscode/
+.idea/
+
+# Claude tooling local state
+.claude/
+
+# Pipeline artifacts (regenerable from `python pipeline.py`)
+out/*.csv
+out/*.html
+out/.DS_Store
+out/plots/
+
+# Keep the LaTeX-ready paper artifacts
+!out/*.tex
+
+# Misc
+*.zip
+*.rar
+*.bak
+*~

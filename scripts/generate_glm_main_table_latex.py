@@ -28,23 +28,26 @@ TEX_OUT   = os.path.join(OUT_DIR, "GLM_main_effects_table.tex")
 
 # Factor definitions: (patsy_anova_term, label, ref_label, ordered_levels_with_labels)
 FACTORS = [
-    ("C(Product)",  "Product Type",   "Basic",
+    ("C(Product)",     "Product Type",            "Basic",
      [("Lab",     "Lab-grown"),
       ("Premium", "Premium")]),
-    ("C(PriceLvl)", "Price Level",    "Low",
+    ("C(PriceLvl)",    "Price Level",             "Low",
      [("Mid",  "Mid"),
       ("High", "High")]),
-    ("C(NutriLvl)", "Nutrition Level","Low",
+    ("C(NutriLvl)",    "Nutrition Level",         "Low",
      [("Mid",  "Mid"),
       ("High", "High")]),
-    ("C(TasteLvl)", "Taste Level",    "Low",
+    ("C(TasteLvl)",    "Taste Level",             "Low",
      [("Mid",  "Mid"),
       ("High", "High")]),
+    ("C(HealthLabel)", "Health \\& Safety Label", "No (Wave 1)",
+     [("1", "Yes (Wave 2)")]),
 ]
 
 # Continuous predictors (parametric)
 CONTINUOUS = [
-    ("SustainScore_c",      "SustainScore",      "Sustainability Orientation"),
+    ("AttScore_c",          "AttScore",          "Attitude Score"),
+    ("BehScore_c",          "BehScore",          "Behavior Score"),
     ("PriceUSD_c",          "PriceUSD",          "Price (USD)"),
     ("LabPriceGap_c",       "LabPriceGap",       "Lab Price Gap"),
     ("Age_num_c",           "Age_num",           "Age"),
@@ -62,13 +65,14 @@ CAT_DEMOS = [
 ]
 
 SECTION_GROUPS = [
-    ("Product Attributes",   [f[0] for f in FACTORS]),
-    ("Psychographic",        ["SustainScore_c"]),
-    ("Price Variables",      ["PriceUSD_c", "LabPriceGap_c"]),
-    ("Demographics",         ["Age_num_c", "Education_num_c",
-                               "HouseholdSize_num_c", "Income_num_c",
-                               "C(Gender)", "C(Marital)",
-                               "C(Employment)", "C(Urban_Rural)"]),
+    ("Product Attributes",      [f[0] for f in FACTORS]),
+    ("Sustainability Attitude", ["AttScore_c"]),
+    ("Sustainability Behavior", ["BehScore_c"]),
+    ("Price Variables",         ["PriceUSD_c", "LabPriceGap_c"]),
+    ("Demographics",            ["Age_num_c", "Education_num_c",
+                                  "HouseholdSize_num_c", "Income_num_c",
+                                  "C(Gender)", "C(Marital)",
+                                  "C(Employment)", "C(Urban_Rural)"]),
 ]
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -239,33 +243,39 @@ def main():
         r"\multicolumn{4}{l}{\scriptsize\textit{pairwise contrast (HC3) →}} & \\"
     )
 
+    # ── longtable form: breaks across pages naturally; renders right where placed ──
+    # NOTE: requires \usepackage{longtable} in the preamble.
     tex = "\n".join([
-        r"\begin{table}[ht]",
-        r"\centering",
-        rf"\caption{{GLM Main Effects — Model 1 ($N={n}$)}}",
-        r"\label{tab:glm_main}",
-        r"\begin{threeparttable}",
-        r"\begin{tabular}{lccccccl}",
+        r"\begin{center}",
+        r"\begin{longtable}{lccccccl}",
+        rf"\caption{{GLM Main Effects --- Model 1 ($N={n}$)}}\label{{tab:glm_main}} \\",
         r"\toprule",
         col_header,
         sub_header,
         r"\midrule",
-        "\n".join(lines),
+        r"\endfirsthead",
+        r"\multicolumn{8}{l}{\textit{Table~\ref{tab:glm_main} continued from previous page.}} \\",
+        r"\toprule",
+        col_header,
         r"\midrule",
+        r"\endhead",
+        r"\midrule",
+        r"\multicolumn{8}{r}{\textit{Continued on next page\ldots}} \\",
+        r"\endfoot",
         rf"\multicolumn{{8}}{{l}}{{$R^2 = {r2:.3f}$,\quad Adj.\ $R^2 = {adj_r2:.3f}$}} \\",
         r"\bottomrule",
-        r"\end{tabular}",
-        r"\begin{tablenotes}\footnotesize",
-        r"\item \textbf{Bold} factor header rows report the omnibus Type~III $F$-test"
-        r" ($df$, $F$, $p$); $\beta$/SE/$t$/$p$/Mean~$(SD)$ left blank.",
-        r"\item Indented level rows report the pairwise contrast vs.\ reference"
-        r" ($\beta$, SE, $t$, $p$ from HC3 robust OLS; Mean~$(SD)$ = descriptive WTP for that level).",
-        r"\item All continuous predictors mean-centred (Jaccard \& Turrisi, 2003).",
-        rf"$N={n}$ observations (268 participants $\times$ 3 products).",
-        r"Significance: *** $p<.01$, ** $p<.05$, * $p<.10$.",
-        r"\end{tablenotes}",
-        r"\end{threeparttable}",
-        r"\end{table}",
+        r"\multicolumn{8}{p{0.95\linewidth}}{\footnotesize \textit{Note.} "
+        r"\textbf{Bold} factor header rows report the omnibus Type~III $F$-test "
+        r"($df$, $F$, $p$); $\beta$/SE/$t$/$p$/Mean~$(SD)$ left blank. "
+        r"Indented level rows report the pairwise contrast vs.\ reference "
+        r"($\beta$, SE, $t$, $p$ from HC3 robust OLS; Mean~$(SD)$ = descriptive WTP for that level). "
+        r"All continuous predictors mean-centred (Jaccard \& Turrisi, 2003). "
+        rf"$N={n}$ observations ({n//3} participants $\times$ 3 products). "
+        r"Significance: *** $p<.01$, ** $p<.05$, * $p<.10$.} \\",
+        r"\endlastfoot",
+        "\n".join(lines),
+        r"\end{longtable}",
+        r"\end{center}",
     ])
 
     os.makedirs(OUT_DIR, exist_ok=True)

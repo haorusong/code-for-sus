@@ -10,14 +10,8 @@ def _extract_price_long_from_raw(raw_path: str) -> pd.DataFrame:
     raw = pd.read_excel(raw_path, sheet_name='Exploring Consumer Preferences ')
     num = raw.apply(lambda c: pd.to_numeric(c, errors='coerce'))
 
-    # Q-range -> actual USD mapping (basic, premium, lab)
-    range_price_map = {
-        (42, 47): {'Basic': 4.0, 'Premium': 6.5, 'Lab': 7.5},
-        (48, 53): {'Basic': 5.0, 'Premium': 5.0, 'Lab': 6.5},
-        (54, 59): {'Basic': 4.5, 'Premium': 6.5, 'Lab': 6.5},
-        (60, 65): {'Basic': 4.2, 'Premium': 7.0, 'Lab': 6.0},
-        (66, 71): {'Basic': 5.5, 'Premium': 5.5, 'Lab': 4.5},
-    }
+    # Q-range -> actual USD mapping (Sept 2025 old coding; xlsx input only)
+    from config.constants import USD_MAP_OLD as range_price_map
 
     def q_prices(q: int):
         for (a, b), m in range_price_map.items():
