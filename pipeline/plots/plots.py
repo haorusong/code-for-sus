@@ -22,6 +22,7 @@ from typing import Optional, Sequence, Dict, Any
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 # Optional deps (only used if present)
 try:
@@ -171,18 +172,50 @@ def plot_attitude_behavior_scatter(
     xj = x + rng.uniform(-jitter, jitter, size=len(x))
     yj = y + rng.uniform(-jitter, jitter, size=len(y))
 
-    fig, ax = plt.subplots(figsize=(7.5, 6.5))
-    ax.set_title("Attitude vs Behavior by Cluster", pad=14)
-    for cat, g in sub.assign(_xj=xj, _yj=yj).groupby(cluster_col):
-        ax.scatter(g["_xj"], g["_yj"], s=40, alpha=0.65, label=str(cat), edgecolors="white", linewidths=0.3)
+    fig, ax = plt.subplots(figsize=(8, 6.5))
+    ax.set_title("Sustainability Segments in Attitude–Behavior Space",
+                 fontsize=12, pad=12)
 
-    ax.set_xlabel("Attitude (Likert)")
-    ax.set_ylabel("Behavior (Likert)")
+    work = sub.assign(_xj=xj, _yj=yj)
+    grouped = list(work.groupby(cluster_col))
+    # Stable colour ordering for the 3 known segments (fall back to default if names differ)
+    colour_map = {
+        "Supportive and Active":   "#2980b9",
+        "Supportive and Inactive": "#e67e22",
+        "Supportive but Inactive": "#e67e22",
+        "Unsupportive and Inactive": "#27ae60",
+    }
+    centroids = []
+    for cat, g in grouped:
+        c = colour_map.get(str(cat), None)
+        n_g = len(g)
+        ax.scatter(g["_xj"], g["_yj"], s=42, alpha=0.55,
+                   label=f"{cat} (n={n_g})",
+                   color=c, edgecolors="white", linewidths=0.3)
+        cx, cy = float(g[COL_ATT].mean()), float(g[COL_BEH].mean())
+        centroids.append((cat, cx, cy, c))
+
+    # Centroid markers — large diamond with white halo
+    for cat, cx, cy, c in centroids:
+        ax.scatter([cx], [cy], s=250, marker="D",
+                   facecolor=c if c else "#222",
+                   edgecolor="black", linewidth=1.6, zorder=10)
+        ax.scatter([cx], [cy], s=80, marker="D",
+                   facecolor="white", edgecolor="none", zorder=11)
+
+    ax.set_xlabel("Sustainability Attitude (Likert 1–7)", fontsize=11)
+    ax.set_ylabel("Sustainability Behavior (Likert 1–7)", fontsize=11)
     ax.set_xlim(0.7, 7.3)
     ax.set_ylim(0.7, 7.3)
-    ax.legend(frameon=False, title="Cluster", loc="lower right")
+    ax.set_xticks(range(1, 8))
+    ax.set_yticks(range(1, 8))
+    ax.grid(True, alpha=0.18, linestyle=":")
+    ax.set_axisbelow(True)
+    # Legend at upper-left so it doesn't overlap the dispersed clusters in the lower-right
+    ax.legend(frameon=False, title="Cluster (◆ = centroid)",
+              loc="upper left", fontsize=9, title_fontsize=10)
     fig.tight_layout()
-    fig.savefig(outpath, dpi=300)
+    fig.savefig(outpath, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -566,7 +599,7 @@ def plot_elbow_method(Xz: np.ndarray, outpath: str, k_min: int = 1, k_max: int =
 
 
 def plot_hierarchical_dendrogram(Xz: np.ndarray, outpath: str, labels: Optional[Sequence[Any]] = None) -> None:
-    """Ward dendrogram. Requires scipy."""
+    """Ward dendrogram with K=3 cut line. Requires scipy."""
     apply_plot_style()
     if linkage is None or dendrogram is None:
         return
@@ -574,13 +607,36 @@ def plot_hierarchical_dendrogram(Xz: np.ndarray, outpath: str, labels: Optional[
         return
 
     Z = linkage(Xz, method="ward")
-    fig, ax = plt.subplots(figsize=(14, 6))
-    ax.set_title("Hierarchical dendrogram (Ward)", pad=14)
-    dendrogram(Z, labels=None if labels is None else list(labels), leaf_rotation=90, ax=ax)
-    ax.set_xlabel("Samples")
-    ax.set_ylabel("Distance")
+    fig, ax = plt.subplots(figsize=(11, 5.5))
+
+    # Distance threshold that yields exactly 3 clusters (cut between 2nd-last
+    # and 3rd-last merges). This anchors the visual K=3 split.
+    if len(Z) >= 3:
+        # Z is sorted by merge order; merge distances are Z[:, 2].
+        # Cut between the (n-3)-th and (n-2)-th merges → 3 clusters above the cut.
+        cut_height = float((Z[-3, 2] + Z[-2, 2]) / 2)
+    else:
+        cut_height = None
+
+    # Suppress per-leaf labels (illegible at this scale anyway) and put the
+    # K=3 colour threshold to colour the three branches consistently.
+    dendrogram(
+        Z, no_labels=True, leaf_rotation=0, ax=ax,
+        color_threshold=cut_height if cut_height is not None else 0,
+        above_threshold_color="#999",
+    )
+
+    if cut_height is not None:
+        ax.axhline(cut_height, color="#c0392b", linestyle="--", linewidth=1.5,
+                   alpha=0.8, label=f"$K=3$ cut (distance ≈ {cut_height:.1f})")
+        ax.legend(loc="upper right", frameon=False, fontsize=10)
+
+    ax.set_title("Hierarchical Dendrogram (Ward Linkage)", pad=12, fontsize=12)
+    ax.set_xlabel(f"Participants (N={len(Xz)})", fontsize=11)
+    ax.set_ylabel("Linkage Distance", fontsize=11)
+    ax.tick_params(axis="x", which="both", bottom=False, labelbottom=False)
     fig.tight_layout()
-    fig.savefig(outpath, dpi=300)
+    fig.savefig(outpath, dpi=300, bbox_inches="tight")
     plt.close(fig)
 def plot_combined_level_counts(df: pd.DataFrame, outpath: str) -> None:
     apply_plot_style()
@@ -647,25 +703,33 @@ def plot_combined_level_counts(df: pd.DataFrame, outpath: str) -> None:
 def plot_moderation_simple_slopes(df: pd.DataFrame, outpath: str,
                                    long_csv: str = "out/GLM_WTP__LongData.csv") -> None:
     """
-    Simple slopes plot using Ordered Logit (OrderedModel) expected WTP values.
-    Groups participants into SustainScore terciles and plots model-based
-    expected WTP (E[Y] = Σ level × P(Y=level)) per group × product type.
-    Falls back to raw means if OrderedModel fitting fails.
+    Simple slopes plot using OLS-based predicted WTP per participant.
+    Groups participants into SustainScore terciles and plots model-adjusted
+    predicted WTP per group × product type. (Per §5.7 robustness check,
+    ordered-logit and OLS yield 100% direction agreement on these contrasts;
+    OLS is used here for stability when categorical reference levels have
+    zero observations in the merged data.)
+    Falls back to raw means if the model fit fails.
     """
     apply_plot_style()
 
-    # ── Try OrderedModel on long data ─────────────────────────────────────
-    use_ordered = False
+    use_model = False
     expected_vals = {}
 
     try:
-        from statsmodels.miscmodels.ordinal_model import OrderedModel
-        from patsy import dmatrix
+        import statsmodels.formula.api as smf
 
-        if not os.path.exists(long_csv):
-            raise FileNotFoundError(long_csv)
+        # Prefer the on-disk CSV (set after the GLM block runs); otherwise
+        # build long format from the wide `df` so this plot works regardless
+        # of the order plot_everything() vs _run_glm_block() runs in.
+        if os.path.exists(long_csv):
+            long = pd.read_csv(long_csv)
+        else:
+            from pipeline.models.analysis import _build_long_wtp
+            long = _build_long_wtp(df)
+            if long is None or long.empty:
+                raise RuntimeError("could not build long-format WTP data")
 
-        long = pd.read_csv(long_csv)
         cont_cols = ["SustainScore", "PriceUSD", "LabPriceGap",
                      "Age_num", "Education_num", "HouseholdSize_num", "Income_num"]
         for c in cont_cols:
@@ -674,22 +738,14 @@ def plot_moderation_simple_slopes(df: pd.DataFrame, outpath: str,
 
         needed_l = ["WTP", "Product", "PriceLvl", "NutriLvl", "TasteLvl", "SustainScore_c"]
         sub = long.dropna(subset=needed_l).copy()
-        sub["WTP"] = _as_numeric(sub["WTP"]).astype(int)
+        sub["WTP"] = _as_numeric(sub["WTP"])
         sub = sub[sub["WTP"].between(1, 7)]
 
-        formula_rhs = ("C(Product) + C(PriceLvl) + C(NutriLvl) + C(TasteLvl)"
-                       " + SustainScore_c + PriceUSD_c + LabPriceGap_c")
-        X = dmatrix(formula_rhs, data=sub, return_type="dataframe")
-        if "Intercept" in X.columns:
-            X = X.drop(columns=["Intercept"])
-
-        mod = OrderedModel(sub["WTP"].values, X.values, distr="logit")
-        res = mod.fit(method="bfgs", disp=False, maxiter=500)
-
-        # Predicted probabilities → expected WTP per observation
-        probs = res.predict()                       # (n, 7)
-        levels = np.arange(1, probs.shape[1] + 1)  # [1,2,...,7]
-        sub["E_WTP"] = probs @ levels
+        # OLS with HC3 robust SE — matches the rest of the paper's analytical frame
+        formula = ("WTP ~ C(Product) * SustainScore_c + C(PriceLvl) + C(NutriLvl)"
+                   " + C(TasteLvl) + PriceUSD_c + LabPriceGap_c")
+        mdl = smf.ols(formula, data=sub).fit(cov_type="HC3")
+        sub["P_WTP"] = mdl.predict(sub).clip(1.0, 7.0)
 
         # Tercile groups on SustainScore_c
         lo = sub["SustainScore_c"].quantile(0.33)
@@ -705,16 +761,19 @@ def plot_moderation_simple_slopes(df: pd.DataFrame, outpath: str,
         for grp in ["Low", "Medium", "High"]:
             for prod in ["Lab", "Premium", "Basic"]:
                 mask = (sub["SustainGroup"] == grp) & (sub["Product"] == prod)
-                vals = sub.loc[mask, "E_WTP"]
+                vals = sub.loc[mask, "P_WTP"]
                 expected_vals[(grp, prod)] = (vals.mean(), vals.sem(), len(vals))
 
-        use_ordered = True
+        use_model = True
 
-    except Exception:
-        pass
+    except Exception as _e:
+        import traceback as _tb
+        print(f"[plot_moderation_simple_slopes] OLS-prediction path failed: "
+              f"{type(_e).__name__}: {_e}")
+        _tb.print_exc()
 
     # ── Fallback: raw means from wide df ──────────────────────────────────
-    if not use_ordered:
+    if not use_model:
         needed_w = ["SustainScore", COL_RATE_LAB, COL_RATE_PREM, COL_RATE_BASIC]
         if not all(c in df.columns for c in needed_w):
             return
@@ -743,37 +802,49 @@ def plot_moderation_simple_slopes(df: pd.DataFrame, outpath: str,
     groups   = ["Low", "Medium", "High"]
     colors   = ["#e74c3c", "#f39c12", "#2ecc71"]
 
-    subtitle = "Ordered Logit Expected WTP" if use_ordered else "Raw Group Means"
+    subtitle = ("Model-adjusted predicted WTP (OLS, HC3 robust SE)"
+                if use_model else "Raw group means (model fit unavailable)")
 
-    fig, ax = plt.subplots(figsize=(9, 6))
-    ax.set_title(
-        f"Moderation Effect: Sustainability Orientation × Product Type\n"
-        f"({subtitle})",
-        pad=14
+    fig, ax = plt.subplots(figsize=(10, 6.2))
+    fig.suptitle(
+        "Moderation Effect: Sustainability Attitude × Product Type",
+        fontsize=14, y=0.98,
     )
+    ax.set_title(subtitle, fontsize=11, pad=8, color="#555")
 
     x = np.arange(len(products))
+    # Use small horizontal jitter so per-group labels don't pile up at same x
+    jitters = {"Low": -0.06, "Medium": 0.0, "High": +0.06}
+
     for grp, color in zip(groups, colors):
         means = [expected_vals[(grp, p)][0] for p, _ in products]
         sems  = [expected_vals[(grp, p)][1] for p, _ in products]
         n_grp = expected_vals[(grp, products[0][0])][2]
+        xj = x + jitters[grp]
         ax.errorbar(
-            x, means, yerr=sems,
+            xj, means, yerr=sems,
             marker="o", linewidth=2.5, markersize=8,
             label=f"{grp} Sustainability (n={n_grp})",
             color=color, capsize=4,
         )
-        for xi, (m, se) in zip(x, zip(means, sems)):
-            ax.text(xi, float(m) + float(se) + 0.10, f"{float(m):.2f}",
-                    ha="center", fontsize=10, color=color)
+        # Stagger label vertical offsets per group to prevent overlap
+        v_off = {"Low": -0.20, "Medium": +0.05, "High": +0.30}[grp]
+        for xi, (m, se) in zip(xj, zip(means, sems)):
+            ax.text(xi, float(m) + float(se) + 0.05 + v_off,
+                    f"{float(m):.2f}",
+                    ha="center", fontsize=9, color=color,
+                    fontweight="bold")
 
     ax.set_xticks(x)
-    ax.set_xticklabels([lbl for _, lbl in products])
+    ax.set_xticklabels([lbl for _, lbl in products], fontsize=11)
     ax.set_ylabel("Expected WTP Rating (1–7)")
-    ax.set_ylim(1, 7.8)
-    ax.legend(frameon=False, loc="upper right", fontsize=11)
-    fig.tight_layout()
-    fig.savefig(outpath, dpi=300)
+    # Wider x-padding so leftmost / rightmost numeric labels don't get clipped
+    ax.set_xlim(-0.55, len(products) - 0.45)
+    ax.set_ylim(1, 7.6)
+    ax.grid(True, axis="y", alpha=0.25, linestyle=":")
+    ax.legend(frameon=False, loc="upper right", fontsize=10)
+    fig.tight_layout(rect=[0, 0, 1, 0.94])
+    fig.savefig(outpath, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -908,55 +979,58 @@ def plot_healthlabel_interactions(df: pd.DataFrame, outpath: str) -> None:
     long["HealthLabel"] = pd.to_numeric(long["HealthLabel"], errors="coerce")
     long = long.dropna(subset=["WTP", "PriceUSD", "HealthLabel"])
 
-    GROUP_LABELS = {0: "No Health Label\n(Sept 2025)", 1: "Health Label\n(April 2026)"}
+    GROUP_LABELS = {0: "No Label (Sept 2025)", 1: "Health Label (Apr 2026)"}
     COLORS       = {0: "#2166ac", 1: "#d6604d"}
-    MARKERS      = {0: "o", 1: "s"}
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
-    fig.suptitle("Health Label × Predictor Interactions", fontsize=13, fontweight="bold", y=1.01)
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5.6))
+    fig.suptitle("Health & Safety Label × Predictor Interactions",
+                 fontsize=13, fontweight="bold", y=1.0)
 
-    # ── Panel A: HealthLabel × Price (significant, p = .007) ──────────────
+    # ── Panel A: HealthLabel × Price (significant, p = .037 in unified model) ──
     ax = axes[0]
     price_vals = np.linspace(long["PriceUSD"].quantile(0.05),
                              long["PriceUSD"].quantile(0.95), 80)
 
+    slopes = {}
     for hl in [0, 1]:
         sub = long[long["HealthLabel"] == hl].copy()
         if sub.empty:
             continue
-        # Fit simple OLS within group for the regression line
+        # Regression line per group (no scatter, no CI band — keep clean)
         try:
             mdl = smf.ols("WTP ~ PriceUSD", data=sub).fit()
             pred = mdl.params["Intercept"] + mdl.params["PriceUSD"] * price_vals
-            ci   = mdl.get_prediction(pd.DataFrame({"PriceUSD": price_vals})).conf_int()
-            ax.fill_between(price_vals, ci[:, 0], ci[:, 1],
-                            alpha=0.12, color=COLORS[hl])
-            ax.plot(price_vals, pred, color=COLORS[hl], lw=2.5,
-                    label=f"{GROUP_LABELS[hl]} (β={mdl.params['PriceUSD']:.3f})")
+            ax.plot(price_vals, pred, color=COLORS[hl], lw=2.6,
+                    label=GROUP_LABELS[hl])
+            slopes[hl] = float(mdl.params["PriceUSD"])
         except Exception:
-            pass
-        # Scatter: mean WTP per price bin
-        sub["price_bin"] = pd.cut(sub["PriceUSD"], bins=6)
-        agg = sub.groupby("price_bin", observed=True)["WTP"].mean()
-        mids = [iv.mid for iv in agg.index]
-        ax.scatter(mids, agg.values, color=COLORS[hl], marker=MARKERS[hl],
-                   s=60, zorder=5, alpha=0.85)
+            slopes[hl] = float("nan")
+
+    # Show slopes as compact text in lower-left of panel (not in legend)
+    if 0 in slopes and 1 in slopes:
+        ax.text(0.03, 0.06,
+                f"Slope (no label):  $\\beta$ = {slopes[0]:+.2f}\n"
+                f"Slope (label):     $\\beta$ = {slopes[1]:+.2f}\n"
+                f"Interaction:        $\\beta$ = {slopes[1]-slopes[0]:+.2f}, "
+                f"$p$ = .037",
+                transform=ax.transAxes, fontsize=9, color="#444",
+                family="monospace", verticalalignment="bottom",
+                bbox=dict(boxstyle="round,pad=0.4", fc="white",
+                          ec="#bbb", alpha=0.9))
 
     ax.set_xlabel("Price (USD)", fontsize=11)
-    ax.set_ylabel("Mean WTP (1–7)", fontsize=11)
-    ax.set_title("Panel A: Health Label × Price\n(interaction β=+0.320, p=.007***)",
+    ax.set_ylabel("Predicted WTP (1–7)", fontsize=11)
+    ax.set_title("Panel A: Health Label × Price (USD)",
                  fontsize=11, fontweight="bold")
-    ax.legend(fontsize=9, frameon=False)
-    ax.grid(True, alpha=0.25)
-    ax.annotate("↑ Label attenuates\nprice sensitivity",
-                xy=(long["PriceUSD"].max() * 0.72, 3.0),
-                fontsize=8.5, color="#d6604d", style="italic")
+    ax.legend(loc="upper right", fontsize=10, frameon=False)
+    ax.grid(True, alpha=0.25, linestyle=":")
+    ax.set_ylim(2.5, 5.5)
 
-    # ── Panel B: Mean WTP by Product × HealthLabel (descriptive) ──────────
+    # ── Panel B: Mean WTP by Product × HealthLabel (descriptive) ─────────────
     ax = axes[1]
     products = ["Basic", "Premium", "Lab"]
     x      = np.arange(len(products))
-    width  = 0.35
+    width  = 0.36
     means  = {}
     sems   = {}
     for hl in [0, 1]:
@@ -967,31 +1041,44 @@ def plot_healthlabel_interactions(df: pd.DataFrame, outpath: str) -> None:
     for i, hl in enumerate([0, 1]):
         offset = (i - 0.5) * width
         bars = ax.bar(x + offset, means[hl], width,
-                      color=COLORS[hl], alpha=0.82,
-                      label=GROUP_LABELS[hl].replace("\n", " "),
+                      color=COLORS[hl], alpha=0.85,
+                      edgecolor="white", linewidth=0.8,
+                      label=GROUP_LABELS[hl],
                       yerr=sems[hl], capsize=4, error_kw={"linewidth": 1.2})
-        for bar, m in zip(bars, means[hl]):
-            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.07,
-                    f"{m:.2f}", ha="center", va="bottom", fontsize=8)
+        # Place numerical label above each bar (above error-bar tip)
+        for bar, m, se in zip(bars, means[hl], sems[hl]):
+            ax.text(bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() + se + 0.10,
+                    f"{m:.2f}", ha="center", va="bottom", fontsize=8.5,
+                    color="#222")
 
-    # Annotate Lab difference
+    # Annotate Lab Δ above the pair, anchored cleanly above both bars
     lab_idx = products.index("Lab")
     delta = means[1][lab_idx] - means[0][lab_idx]
-    ax.annotate(f"Δ={delta:+.2f}",
-                xy=(x[lab_idx], max(means[0][lab_idx], means[1][lab_idx]) + 0.35),
-                ha="center", fontsize=9, color="#c0392b", fontweight="bold")
+    top_lab = max(means[0][lab_idx] + sems[0][lab_idx],
+                  means[1][lab_idx] + sems[1][lab_idx])
+    ax.annotate(
+        f"$\\Delta$ = {delta:+.2f}",
+        xy=(x[lab_idx], top_lab + 0.45),
+        ha="center", fontsize=10, color="#c0392b", fontweight="bold",
+    )
+    # Bracket-style indicator under the annotation
+    ax.plot([x[lab_idx] - width/2, x[lab_idx] + width/2],
+            [top_lab + 0.30, top_lab + 0.30],
+            color="#c0392b", lw=1.4)
 
     ax.set_xticks(x)
     ax.set_xticklabels(products, fontsize=11)
     ax.set_ylabel("Mean WTP (1–7)", fontsize=11)
     ax.set_xlabel("Product Type", fontsize=11)
-    ax.set_title("Panel B: Health Label × Product\n(descriptive; β=+0.60, p=.138)",
+    ax.set_title("Panel B: Mean WTP by Product × Label",
                  fontsize=11, fontweight="bold")
-    ax.legend(fontsize=9, frameon=False)
-    ax.set_ylim(0, max(max(means[0]), max(means[1])) + 0.8)
-    ax.grid(True, axis="y", alpha=0.25)
+    ax.legend(loc="upper left", fontsize=10, frameon=False)
+    ax.set_ylim(0, max(max(means[0]), max(means[1])) + 1.4)
+    ax.grid(True, axis="y", alpha=0.25, linestyle=":")
+    ax.set_axisbelow(True)
 
-    fig.tight_layout()
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
     os.makedirs(os.path.dirname(outpath), exist_ok=True)
     fig.savefig(outpath, dpi=180, bbox_inches="tight")
     plt.close(fig)
@@ -1023,13 +1110,18 @@ def plot_glm_forest(coefs_csv: str, outpath: str) -> None:
         "C(TasteLvl)[T.Mid]":           "Taste Level: Mid",
         "C(TasteLvl)[T.High]":          "Taste Level: High",
         # Continuous predictors
-        "SustainScore_c":               "Sustainability Orientation",
+        "SustainScore_c":               "Sustainability (composite)",
+        "AttScore_c":                   "Sustainability Attitude",
+        "BehScore_c":                   "Sustainability Behavior",
         "PriceUSD_c":                   "Price (USD)",
         "LabPriceGap_c":                "Lab Price Gap",
-        "Age_num_c":                    "Age (continuous)",
+        "Age_num_c":                    "Age (years)",
         "Education_num_c":              "Education (years)",
         "HouseholdSize_num_c":          "Household Size",
-        "Income_num_c":                 "Income (continuous)",
+        "Income_num_c":                 "Income ($K, midpoint)",
+        # Health Label
+        "C(HealthLabel)[T.1]":          "Health Label: Yes",
+        "C(HealthLabel)[T.1.0]":        "Health Label: Yes",
         # Gender (ref = Male = 1)
         "C(Gender)[T.2.0]":             "Gender: Female",
         "C(Gender)[T.3.0]":             "Gender: Non-binary",
@@ -1108,6 +1200,136 @@ def plot_glm_forest(coefs_csv: str, outpath: str) -> None:
     ]
     ax.legend(handles=legend_els, frameon=False, loc="lower right", fontsize=10)
     fig.tight_layout()
+    fig.savefig(outpath, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------
+# NEW: Attitude × Health Label heatmap, faceted by Product
+# ---------------------------------------------------------------------
+def plot_attitude_healthlabel_heatmap(df: pd.DataFrame, outpath: str) -> None:
+    """
+    Three-panel heatmap (one per product) showing mean WTP across the
+    Attitude tercile × Health Label cells. Designed for §5.5 — visually
+    compresses the two flagship moderators (Lab × Attitude, HealthLabel ×
+    Price) onto one figure. Skipped if HealthLabel or AttScore is missing.
+    """
+    apply_plot_style()
+    if "HealthLabel" not in df.columns or df["HealthLabel"].nunique() < 2:
+        return
+
+    from pipeline.models.analysis import _build_long_wtp
+    long = _build_long_wtp(df)
+    if long is None or long.empty:
+        return
+    if "AttScore" not in long.columns:
+        return
+
+    long = long.dropna(subset=["WTP", "AttScore", "HealthLabel", "Product"]).copy()
+    long["HealthLabel"] = pd.to_numeric(long["HealthLabel"], errors="coerce")
+    long = long.dropna(subset=["HealthLabel"])
+    if long.empty:
+        return
+
+    # Attitude terciles (computed across the full sample)
+    lo = float(long["AttScore"].quantile(0.33))
+    hi = float(long["AttScore"].quantile(0.67))
+    def _att_grp(v: float) -> str:
+        if v <= lo:  return "Low"
+        if v <= hi:  return "Medium"
+        return "High"
+    long["AttGrp"] = long["AttScore"].map(_att_grp)
+
+    products    = ["Lab", "Premium", "Basic"]
+    pretty      = {"Lab": "Lab-grown", "Premium": "Premium", "Basic": "Basic"}
+    att_rows    = ["High", "Medium", "Low"]   # top-to-bottom
+    hl_cols     = [0, 1]
+    hl_labels   = ["No Label\n(Sept 2025)", "Health Label\n(Apr 2026)"]
+
+    matrices = {}
+    counts   = {}
+    for prod in products:
+        m = np.full((3, 2), np.nan)
+        c = np.zeros((3, 2), dtype=int)
+        for i, ag in enumerate(att_rows):
+            for j, hl in enumerate(hl_cols):
+                sub = long[(long["AttGrp"] == ag) &
+                           (long["HealthLabel"] == hl) &
+                           (long["Product"] == prod)]
+                if len(sub) > 0:
+                    m[i, j] = float(sub["WTP"].mean())
+                    c[i, j] = int(len(sub))
+        matrices[prod] = m
+        counts[prod]   = c
+
+    # Common colour scale across all 6 cells × 3 panels
+    all_vals = np.concatenate([matrices[p].flatten() for p in products])
+    finite = all_vals[~np.isnan(all_vals)]
+    if finite.size == 0:
+        return
+    vmin = float(np.floor(finite.min() * 2) / 2)
+    vmax = float(np.ceil(finite.max() * 2) / 2)
+    vmid = (vmin + vmax) / 2
+
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.5),
+                              gridspec_kw={"wspace": 0.18})
+    fig.suptitle("Mean WTP by Sustainability Attitude × Health & Safety Label, by Product",
+                 fontsize=13, fontweight="bold", y=1.02)
+
+    cmap = plt.cm.viridis
+
+    last_im = None
+    for k, prod in enumerate(products):
+        ax = axes[k]
+        m = matrices[prod]
+        c = counts[prod]
+        im = ax.imshow(m, cmap=cmap, vmin=vmin, vmax=vmax,
+                        aspect="auto", interpolation="nearest")
+        last_im = im
+
+        ax.set_xticks(range(2))
+        ax.set_xticklabels(hl_labels, fontsize=9.5)
+        ax.set_yticks(range(3))
+        ax.set_yticklabels(att_rows if k == 0 else ["", "", ""], fontsize=10)
+        if k == 0:
+            ax.set_ylabel("Sustainability Attitude (tercile)", fontsize=11)
+        ax.set_title(pretty[prod], fontsize=12, fontweight="bold", pad=8)
+
+        # Cell text — value (bigger) + sample size (smaller, below)
+        for i in range(3):
+            for j in range(2):
+                v = m[i, j]
+                n = c[i, j]
+                if np.isnan(v):
+                    ax.text(j, i, "—", ha="center", va="center",
+                            color="#999", fontsize=11)
+                    continue
+                txt_color = "white" if v < vmid else "black"
+                ax.text(j, i - 0.10, f"{v:.2f}",
+                        ha="center", va="center",
+                        color=txt_color, fontsize=13, fontweight="bold")
+                ax.text(j, i + 0.22, f"n={n}",
+                        ha="center", va="center",
+                        color=txt_color, fontsize=8, alpha=0.85)
+
+        ax.tick_params(axis="x", which="both", length=0)
+        ax.tick_params(axis="y", which="both", length=0)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+    # Highlight the flagship cell (Lab × High Att × Yes Label)
+    flag_ax = axes[0]
+    flag_rect = mpatches.Rectangle(
+        (1 - 0.48, 0 - 0.48), 0.96, 0.96,
+        linewidth=2.2, edgecolor="#e74c3c", facecolor="none", zorder=10,
+    )
+    flag_ax.add_patch(flag_rect)
+
+    # Shared colour bar
+    cbar = fig.colorbar(last_im, ax=axes, fraction=0.025, pad=0.02,
+                        shrink=0.85)
+    cbar.set_label("Mean WTP (1–7)", fontsize=10)
+
     fig.savefig(outpath, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
@@ -1211,5 +1433,10 @@ def plot_everything(
         fp = os.path.join(out_dir, "fig_healthlabel_interactions.png")
         plot_healthlabel_interactions(df, fp)
         out["fig_healthlabel_interactions"] = fp
+
+        # Attitude × Health Label heatmap, faceted by Product (§5.5)
+        fp = os.path.join(out_dir, "fig_attitude_healthlabel_heatmap.png")
+        plot_attitude_healthlabel_heatmap(df, fp)
+        out["fig_attitude_healthlabel_heatmap"] = fp
 
     return out

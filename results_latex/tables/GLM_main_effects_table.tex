@@ -1,0 +1,53 @@
+\begin{center}
+\begin{longtable}{lccccccl}
+\caption{GLM Main Effects --- Model 1 ($N=1743$)}\label{tab:glm_main} \\
+\toprule
+Predictor & $df$ & $F$ & $\beta\ (SE)$ & $t$ & $p$ & Mean\ $(SD)$ & Sig. \\
+\multicolumn{3}{l}{\scriptsize\textit{← omnibus (Type III)}} & \multicolumn{4}{l}{\scriptsize\textit{pairwise contrast (HC3) →}} & \\
+\midrule
+\endfirsthead
+\multicolumn{8}{l}{\textit{Table~\ref{tab:glm_main} continued from previous page.}} \\
+\toprule
+Predictor & $df$ & $F$ & $\beta\ (SE)$ & $t$ & $p$ & Mean\ $(SD)$ & Sig. \\
+\midrule
+\endhead
+\midrule
+\multicolumn{8}{r}{\textit{Continued on next page\ldots}} \\
+\endfoot
+\multicolumn{8}{l}{$R^2 = 0.146$,\quad Adj.\ $R^2 = 0.130$} \\
+\bottomrule
+\multicolumn{8}{p{0.95\linewidth}}{\footnotesize \textit{Note.} \textbf{Bold} factor header rows report the omnibus Type~III $F$-test ($df$, $F$, $p$); $\beta$/SE/$t$/$p$/Mean~$(SD)$ left blank. Indented level rows report the pairwise contrast vs.\ reference ($\beta$, SE, $t$, $p$ from HC3 robust OLS; Mean~$(SD)$ = descriptive WTP for that level). All continuous predictors mean-centred (Jaccard \& Turrisi, 2003). $N=1743$ observations (581 participants $\times$ 3 products). Significance: *** $p<.01$, ** $p<.05$, * $p<.10$.} \\
+\endlastfoot
+\multicolumn{8}{l}{\textit{Product Attributes}} \\
+\quad \textbf{Product Type} (ref: Basic) & 2 & 44.82 & & & $<$.001 & 4.260 (1.825) & *** \\
+\qquad Lab-grown & & & -0.486 (0.202) & -2.404 & 0.016 & 3.643 (2.135) & ** \\
+\qquad Premium & & & 0.989 (0.312) & 3.167 & 0.002 & 5.205 (1.706) & *** \\
+\quad \textbf{Price Level} (ref: Low) & 2 & 0.30 & & & 0.741 & 4.324 (1.900) &  \\
+\qquad Mid & & & 0.133 (0.184) & 0.721 & 0.471 & 4.470 (1.978) &  \\
+\qquad High & & & 0.173 (0.234) & 0.738 & 0.460 & 4.300 (2.049) &  \\
+\quad \textbf{Nutrition Level} (ref: Low) & 2 & 146.36 & & & $<$.001 &  & *** \\
+\qquad Mid & & & 1.565 (0.108) & 14.452 & $<$.001 & 4.088 (1.940) & *** \\
+\qquad High & & & 1.340 (0.144) & 9.320 & $<$.001 & 4.655 (2.025) & *** \\
+\quad \textbf{Taste Level} (ref: Low) & 2 & 6.17 & & & 0.002 & 3.628 (2.165) & *** \\
+\qquad Mid & & & -0.303 (0.207) & -1.463 & 0.143 & 4.022 (1.914) &  \\
+\qquad High & & & 0.362 (0.215) & 1.682 & 0.092 & 4.896 (1.915) & * \\
+\quad \textbf{Health \& Safety Label} (ref: No (Wave 1)) & 1 & 9.89 & & & 0.002 &  & *** \\
+\qquad Yes (Wave 2) & & & -0.590 (0.189) & -3.116 & 0.002 & --- & *** \\
+\multicolumn{8}{l}{\textit{Sustainability Attitude}} \\
+\quad Attitude Score & & & 0.153 (0.045) & 3.364 & $<$.001 & 5.524 (1.273) & *** \\
+\multicolumn{8}{l}{\textit{Sustainability Behavior}} \\
+\quad Behavior Score & & & 0.088 (0.045) & 1.963 & 0.050 & 3.810 (1.309) & ** \\
+\multicolumn{8}{l}{\textit{Price Variables}} \\
+\quad Price (USD) & & & -0.315 (0.086) & -3.674 & $<$.001 & 4.496 (1.552) & *** \\
+\quad Lab Price Gap & & & 0.051 (0.044) & 1.169 & 0.242 & 1.291 (1.503) &  \\
+\multicolumn{8}{l}{\textit{Demographics}} \\
+\quad Age & & & -0.003 (0.005) & -0.752 & 0.452 & 40.093 (13.175) &  \\
+\quad Education & & & 0.036 (0.020) & 1.811 & 0.070 & 15.276 (2.537) & * \\
+\quad Household Size & & & 0.023 (0.042) & 0.551 & 0.582 & 2.624 (1.294) &  \\
+\quad Income & & & 0.001 (0.001) & 1.191 & 0.233 & 73.319 (47.352) &  \\
+\quad Gender & 3 & 0.08 & & & 0.973 & &  \\
+\quad Marital Status & 4 & 0.75 & & & 0.560 & &  \\
+\quad Employment Status & 6 & 0.31 & & & 0.934 & &  \\
+\quad Residential Area & 2 & 0.04 & & & 0.958 & &  \\
+\end{longtable}
+\end{center}

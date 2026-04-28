@@ -139,8 +139,10 @@ t1 = "\n".join([
     fac_hdr("Health Label","No (ref.)","C(HealthLabel)") if "C(HealthLabel)" in an.index else "",
     lev_row("Yes (April 2026)","C(HealthLabel)[T.1]","HealthLabel",1) if "C(HealthLabel)[T.1]" in c1.index else "",
     '<tr class="divider"><td colspan="8"></td></tr>',
-    sec("Psychographic"),
-    cont_row("Sustainability Orientation","SustainScore_c","SustainScore"),
+    sec("Sustainability Attitude"),
+    cont_row("Attitude Score","AttScore_c","AttScore"),
+    sec("Sustainability Behavior"),
+    cont_row("Behavior Score","BehScore_c","BehScore"),
     sec("Price Variables"),
     cont_row("Price (USD)","PriceUSD_c","PriceUSD"),
     cont_row("Lab Price Gap","LabPriceGap_c","LabPriceGap"),
@@ -157,41 +159,178 @@ t1 = "\n".join([
      f'&nbsp;&nbsp;Adj.&nbsp;<i>R</i><sup>2</sup>&nbsp;=&nbsp;{ar2_1:.3f}</td></tr>'),
 ])
 
-t2 = "\n".join([
-    sec("Sustainability &times; Product Type", 5),
-    ixn_hdr("Sustainability &times; Product Type","ref: Basic"),
-    ixn_row("&times; Lab-grown","SustainScore_c:C(Product)[T.Lab]"),
-    ixn_row("&times; Premium","SustainScore_c:C(Product)[T.Premium]"),
-    sec("Sustainability &times; Price Level", 5),
-    ixn_hdr("Sustainability &times; Price Level","ref: Low"),
-    ixn_row("&times; Mid","SustainScore_c:C(PriceLvl)[T.Mid]"),
-    ixn_row("&times; High","SustainScore_c:C(PriceLvl)[T.High]"),
-    sec("Sustainability &times; Nutrition Level", 5),
-    ixn_hdr("Sustainability &times; Nutrition Level","ref: Low"),
-    ixn_row("&times; Mid","SustainScore_c:C(NutriLvl)[T.Mid]"),
-    ixn_row("&times; High","SustainScore_c:C(NutriLvl)[T.High]"),
-    sec("Lab Price Gap &times; Product Type", 5),
-    ixn_hdr("Lab Price Gap &times; Product Type","ref: Basic"),
-    ixn_row("&times; Lab-grown","LabPriceGap_c:C(Product)[T.Lab]"),
-    ixn_row("&times; Premium","LabPriceGap_c:C(Product)[T.Premium]"),
-    sec("Price USD &times; Product Type", 5),
-    ixn_hdr("Price USD &times; Product Type","ref: Basic"),
-    ixn_row("&times; Lab-grown","PriceUSD_c:C(Product)[T.Lab]"),
-    ixn_row("&times; Premium","PriceUSD_c:C(Product)[T.Premium]"),
-    sec("Price Level &times; Nutrition Level", 5),
-    ixn_hdr("Price Level &times; Nutrition Level","ref: Low &times; Low"),
-    ixn_row("Mid &times; Mid","C(PriceLvl)[T.Mid]:C(NutriLvl)[T.Mid]"),
-    ixn_row("High &times; Mid","C(PriceLvl)[T.High]:C(NutriLvl)[T.Mid]"),
-    ixn_row("Mid &times; High","C(PriceLvl)[T.Mid]:C(NutriLvl)[T.High]"),
-    ixn_row("High &times; High","C(PriceLvl)[T.High]:C(NutriLvl)[T.High]"),
-    (f'<tr class="footer"><td colspan="5">'
-     f'&Delta;<i>R</i><sup>2</sup>&nbsp;=&nbsp;{dr2:.3f},&nbsp;&nbsp;'
-     f'<i>F</i>-change({dk},&nbsp;{dfe})&nbsp;=&nbsp;{fchg:.2f},&nbsp;&nbsp;'
-     f'<i>p</i>&nbsp;{pchg_str}</td></tr>'),
-    (f'<tr class="model-footer"><td colspan="5">'
-     f'Model&nbsp;2: <i>R</i><sup>2</sup>&nbsp;=&nbsp;{r2_2:.3f},'
-     f'&nbsp;&nbsp;Adj.&nbsp;<i>R</i><sup>2</sup>&nbsp;=&nbsp;{ar2_2:.3f}</td></tr>'),
-])
+# ─── Build interaction table mirroring LaTeX generator (cross-interactions
+#     among the 8 main-effect-significant variables; show only rows with p<.10) ──
+SIG_THRESHOLD = 0.10
+
+# Each group: (label, ref_note, [(coef_term, row_label), ...])
+INTERACTIONS = [
+    ("Product Type &times; Nutrition Level", "ref: Basic &times; Low", [
+        ("C(Product)[T.Lab]:C(NutriLvl)[T.Mid]",      "Lab &times; Mid"),
+        ("C(Product)[T.Lab]:C(NutriLvl)[T.High]",     "Lab &times; High"),
+        ("C(Product)[T.Premium]:C(NutriLvl)[T.Mid]",  "Premium &times; Mid"),
+        ("C(Product)[T.Premium]:C(NutriLvl)[T.High]", "Premium &times; High"),
+    ]),
+    ("Product Type &times; Taste Level", "ref: Basic &times; Low", [
+        ("C(Product)[T.Lab]:C(TasteLvl)[T.Mid]",      "Lab &times; Mid"),
+        ("C(Product)[T.Lab]:C(TasteLvl)[T.High]",     "Lab &times; High"),
+        ("C(Product)[T.Premium]:C(TasteLvl)[T.Mid]",  "Premium &times; Mid"),
+        ("C(Product)[T.Premium]:C(TasteLvl)[T.High]", "Premium &times; High"),
+    ]),
+    ("Product Type &times; Health &amp; Safety Label", "ref: Basic &times; No", [
+        ("C(Product)[T.Lab]:C(HealthLabel)[T.1]",     "Lab &times; Yes"),
+        ("C(Product)[T.Premium]:C(HealthLabel)[T.1]", "Premium &times; Yes"),
+    ]),
+    ("Product Type &times; Attitude Score", "ref: Basic", [
+        ("C(Product)[T.Lab]:AttScore_c",     "Lab &times; Attitude"),
+        ("C(Product)[T.Premium]:AttScore_c", "Premium &times; Attitude"),
+    ]),
+    ("Product Type &times; Behavior Score", "ref: Basic", [
+        ("C(Product)[T.Lab]:BehScore_c",     "Lab &times; Behavior"),
+        ("C(Product)[T.Premium]:BehScore_c", "Premium &times; Behavior"),
+    ]),
+    ("Product Type &times; Price (USD)", "ref: Basic", [
+        ("C(Product)[T.Lab]:PriceUSD_c",     "Lab &times; PriceUSD"),
+        ("C(Product)[T.Premium]:PriceUSD_c", "Premium &times; PriceUSD"),
+    ]),
+    ("Product Type &times; Education", "ref: Basic", [
+        ("C(Product)[T.Lab]:Education_num_c",     "Lab &times; Education"),
+        ("C(Product)[T.Premium]:Education_num_c", "Premium &times; Education"),
+    ]),
+    ("Nutrition Level &times; Taste Level", "ref: Low &times; Low", [
+        ("C(NutriLvl)[T.Mid]:C(TasteLvl)[T.Mid]",   "Mid &times; Mid"),
+        ("C(NutriLvl)[T.High]:C(TasteLvl)[T.Mid]",  "High &times; Mid"),
+        ("C(NutriLvl)[T.Mid]:C(TasteLvl)[T.High]",  "Mid &times; High"),
+        ("C(NutriLvl)[T.High]:C(TasteLvl)[T.High]", "High &times; High"),
+    ]),
+    ("Nutrition Level &times; Health &amp; Safety Label", "ref: Low &times; No", [
+        ("C(NutriLvl)[T.Mid]:C(HealthLabel)[T.1]",  "Mid &times; Yes"),
+        ("C(NutriLvl)[T.High]:C(HealthLabel)[T.1]", "High &times; Yes"),
+    ]),
+    ("Nutrition Level &times; Attitude Score", "ref: Low", [
+        ("C(NutriLvl)[T.Mid]:AttScore_c",  "Mid &times; Attitude"),
+        ("C(NutriLvl)[T.High]:AttScore_c", "High &times; Attitude"),
+    ]),
+    ("Nutrition Level &times; Behavior Score", "ref: Low", [
+        ("C(NutriLvl)[T.Mid]:BehScore_c",  "Mid &times; Behavior"),
+        ("C(NutriLvl)[T.High]:BehScore_c", "High &times; Behavior"),
+    ]),
+    ("Nutrition Level &times; Price (USD)", "ref: Low", [
+        ("C(NutriLvl)[T.Mid]:PriceUSD_c",  "Mid &times; PriceUSD"),
+        ("C(NutriLvl)[T.High]:PriceUSD_c", "High &times; PriceUSD"),
+    ]),
+    ("Nutrition Level &times; Education", "ref: Low", [
+        ("C(NutriLvl)[T.Mid]:Education_num_c",  "Mid &times; Education"),
+        ("C(NutriLvl)[T.High]:Education_num_c", "High &times; Education"),
+    ]),
+    ("Taste Level &times; Health &amp; Safety Label", "ref: Low &times; No", [
+        ("C(TasteLvl)[T.Mid]:C(HealthLabel)[T.1]",  "Mid &times; Yes"),
+        ("C(TasteLvl)[T.High]:C(HealthLabel)[T.1]", "High &times; Yes"),
+    ]),
+    ("Taste Level &times; Attitude Score", "ref: Low", [
+        ("C(TasteLvl)[T.Mid]:AttScore_c",  "Mid &times; Attitude"),
+        ("C(TasteLvl)[T.High]:AttScore_c", "High &times; Attitude"),
+    ]),
+    ("Taste Level &times; Behavior Score", "ref: Low", [
+        ("C(TasteLvl)[T.Mid]:BehScore_c",  "Mid &times; Behavior"),
+        ("C(TasteLvl)[T.High]:BehScore_c", "High &times; Behavior"),
+    ]),
+    ("Taste Level &times; Price (USD)", "ref: Low", [
+        ("C(TasteLvl)[T.Mid]:PriceUSD_c",  "Mid &times; PriceUSD"),
+        ("C(TasteLvl)[T.High]:PriceUSD_c", "High &times; PriceUSD"),
+    ]),
+    ("Taste Level &times; Education", "ref: Low", [
+        ("C(TasteLvl)[T.Mid]:Education_num_c",  "Mid &times; Education"),
+        ("C(TasteLvl)[T.High]:Education_num_c", "High &times; Education"),
+    ]),
+    ("Health &amp; Safety Label &times; Attitude Score", "ref: No", [
+        ("C(HealthLabel)[T.1]:AttScore_c", "Yes &times; Attitude"),
+    ]),
+    ("Health &amp; Safety Label &times; Behavior Score", "ref: No", [
+        ("C(HealthLabel)[T.1]:BehScore_c", "Yes &times; Behavior"),
+    ]),
+    ("Health &amp; Safety Label &times; Price (USD)", "ref: No", [
+        ("C(HealthLabel)[T.1]:PriceUSD_c", "Yes &times; PriceUSD"),
+    ]),
+    ("Health &amp; Safety Label &times; Education", "ref: No", [
+        ("C(HealthLabel)[T.1]:Education_num_c", "Yes &times; Education"),
+    ]),
+    ("Attitude Score &times; Behavior Score", "", [
+        ("AttScore_c:BehScore_c", "Attitude &times; Behavior"),
+    ]),
+    ("Attitude Score &times; Price (USD)", "", [
+        ("AttScore_c:PriceUSD_c", "Attitude &times; PriceUSD"),
+    ]),
+    ("Attitude Score &times; Education", "", [
+        ("AttScore_c:Education_num_c", "Attitude &times; Education"),
+    ]),
+    ("Behavior Score &times; Price (USD)", "", [
+        ("BehScore_c:PriceUSD_c", "Behavior &times; PriceUSD"),
+    ]),
+    ("Behavior Score &times; Education", "", [
+        ("BehScore_c:Education_num_c", "Behavior &times; Education"),
+    ]),
+    ("Price (USD) &times; Education", "", [
+        ("PriceUSD_c:Education_num_c", "PriceUSD &times; Education"),
+    ]),
+]
+
+t2_rows = []
+n_total = 0; n_sig = 0; n_groups_total = 0
+for grp_label, ref_note, terms in INTERACTIONS:
+    n_groups_total += 1
+    all_rows = []
+    for cterm, rlabel in terms:
+        n_total += 1
+        if cterm not in c2.index:
+            continue
+        r = c2.loc[cterm]
+        p = float(r["p"])
+        if np.isnan(p):
+            continue
+        all_rows.append((rlabel, r))
+        if p < SIG_THRESHOLD:
+            n_sig += 1
+    if not all_rows:
+        continue
+    if ref_note:
+        t2_rows.append(
+            f'<tr class="factor-hdr"><td class="indent"><b>{grp_label}</b>'
+            f'&nbsp;<span style="font-weight:normal;font-size:11px;">({ref_note})</span></td>'
+            f'<td></td><td></td><td></td><td></td></tr>'
+        )
+    else:
+        t2_rows.append(
+            f'<tr class="factor-hdr"><td class="indent"><b>{grp_label}</b></td>'
+            f'<td></td><td></td><td></td><td></td></tr>'
+        )
+    for rlabel, r in all_rows:
+        p = float(r["p"])
+        t2_rows.append(
+            f'<tr><td class="indent2">{rlabel}</td>'
+            f'<td class="num">{fb(float(r["coef"]),float(r["std_err"]))}</td>'
+            f'<td class="num">{ft(float(r["t"]))}</td>'
+            f'<td class="num">{fp(p)}</td>'
+            f'<td class="sig">{sig(p)}</td></tr>'
+        )
+
+if not t2_rows:
+    t2_rows = ['<tr><td colspan="5" style="text-align:center;color:#888;font-style:italic;">No estimable interactions.</td></tr>']
+
+# Footer rows
+t2_rows.append(
+    f'<tr class="footer"><td colspan="5">'
+    f'&Delta;<i>R</i><sup>2</sup>&nbsp;=&nbsp;{dr2:.3f},&nbsp;&nbsp;'
+    f'<i>F</i>-change({dk},&nbsp;{dfe})&nbsp;=&nbsp;{fchg:.2f},&nbsp;&nbsp;'
+    f'<i>p</i>&nbsp;{pchg_str}</td></tr>'
+)
+t2_rows.append(
+    f'<tr class="model-footer"><td colspan="5">'
+    f'Model&nbsp;2: <i>R</i><sup>2</sup>&nbsp;=&nbsp;{r2_2:.3f},'
+    f'&nbsp;&nbsp;Adj.&nbsp;<i>R</i><sup>2</sup>&nbsp;=&nbsp;{ar2_2:.3f}'
+    f'&nbsp;&nbsp;|&nbsp;&nbsp;Full pairwise cross-comparison: all {n_groups_total} groups, {n_sig} of {n_total} cells significant</td></tr>'
+)
+t2 = "\n".join(t2_rows)
 
 _om_link = ('<a href="om_sensitivity.html" style="display:inline-block;margin:16px 0 32px;'
             'background:#e8f0ff;border:1px solid #66a;border-radius:4px;padding:6px 14px;'

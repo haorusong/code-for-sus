@@ -1,0 +1,62 @@
+% ============================================================================
+% Standalone compile of the Results section for quick review.
+%   pdflatex standalone_preview.tex
+% (Requires booktabs, threeparttable, graphicx, natbib.)
+% ============================================================================
+\documentclass[11pt]{article}
+\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage[square,numbers]{natbib}
+\usepackage{hyperref}
+\usepackage{caption}
+
+\graphicspath{{./figures/}}
+
+% Minimal bib stubs so citations don't break without a full bibliography.
+% Remove this block when compiling against main paper's bibliography.bib.
+\usepackage{filecontents}
+\begin{filecontents*}{standalone_stub.bib}
+@article{jaccard2003,
+  author  = {Jaccard, J. and Turrisi, R.},
+  title   = {Interaction Effects in Multiple Regression},
+  year    = {2003}, journal = {Sage University Papers}}
+@article{mackinnon1985,
+  author  = {MacKinnon, J. and White, H.},
+  title   = {Some Heteroskedasticity-Consistent Covariance Matrix Estimators},
+  year    = {1985}, journal = {Journal of Econometrics}}
+@book{agresti2010,
+  author  = {Agresti, A.}, title = {Analysis of Ordinal Categorical Data},
+  year    = {2010}, publisher = {Wiley}}
+@article{siegrist2020,
+  author  = {Siegrist, M. and Hartmann, C.},
+  title   = {Consumer Acceptance of Novel Food Technologies},
+  year    = {2020}, journal = {Nature Food}}
+@article{kollmuss2002,
+  author  = {Kollmuss, A. and Agyeman, J.},
+  title   = {Mind the Gap: Why Do People Act Environmentally?},
+  year    = {2002}, journal = {Environmental Education Research}}
+@article{theisz2025,
+  author  = {Theisz, M. and others},
+  title   = {Sustainability Propensity Scale Validation},
+  year    = {2025}, journal = {Placeholder}}
+@article{marcus2015,
+  author  = {Marcus, J.},
+  title   = {Consumer Segmentation: A Review},
+  year    = {2015}, journal = {Placeholder}}
+\end{filecontents*}
+\bibliographystyle{plainnat}
+
+\title{Results Section --- Standalone Preview}
+\author{(rewrite for merged April 2026 analysis)}
+\date{}
+
+\begin{document}
+\maketitle
+
+\input{results_section.tex}
+
+\bibliography{standalone_stub}
+
+\end{document}
